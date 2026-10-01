@@ -1,0 +1,33 @@
+﻿{
+  "name": "enterprise-copilot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "type-check": "pnpm -r run type-check",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.0.9",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.3",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.71.0"
+  }
+}
+
+
+

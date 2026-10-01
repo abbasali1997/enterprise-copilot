@@ -1,0 +1,11 @@
+#                       JWT (using jose)
+#                            ↓
+#                     authenticate user
+#                            ↓
+#                   organization membership
+#                            ↓
+#                       role / groups
+#                            ↓
+#                      permission check
+#                            ↓
+#                       tRPC procedure

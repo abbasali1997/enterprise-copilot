@@ -1,0 +1,57 @@
+# Dependencies and package manager caches
+node_modules/
+.pnpm-store/
+.npm/
+
+# Build output and tool caches
+dist/
+dist-ssr/
+build/
+out/
+.vite/
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Environment variables and local overrides
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# Logs and runtime files
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# IDE and editor files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local project planning documents
+/project-management
+
+#Prisma
+/packages/db/src/generated/prisma/
+

@@ -1,0 +1,239 @@
+###################################################################
+#                 Architecture - 6 core containers
+####################################################################
+#                            Browser
+#                               │
+#                               ▼
+#                        ┌──────────────┐
+#                        │  1. Web      │
+#                        │  React/Vite  │
+#                        └──────┬───────┘
+#                               │ tRPC
+#                               ▼
+#                        ┌──────────────┐
+#                        │ 2. Server    │
+#                        │ Node + tRPC  │
+#                        └──────┬───────┘
+#                               │
+#              ┌────────────────┼─────────────────┐
+#              │                │                 │
+#              ▼                ▼                 ▼
+#      ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+#      │ 4. Postgres  │  │ 5. Redis     │  │ 6. MinIO     │
+#      │ + pgvector   │  │    BullMQ    │  │ File storage │
+#      └──────────────┘  └──────┬───────┘  └──────────────┘
+#                               │
+#                               ▼
+#                        ┌──────────────┐
+#                        │ 3. Worker    │
+#                        │ Node/BullMQ  │
+#                        └──────────────┘
+#
+#          Server / Worker
+#                 │
+#                 ▼
+#          External LLM APIs
+#         OpenAI / Gemini / etc.
+####################################################################
+
+version: "3.9"
+
+services:
+  # =========================================================
+  # React Frontend
+  # =========================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: enterprise-copilot-web
+
+    ports:
+      - "5173:5173"
+
+    environment:
+      VITE_API_URL: http://localhost:3000
+
+    depends_on:
+      - server
+
+    restart: unless-stopped
+
+
+  # =========================================================
+  # tRPC / Node.js Backend
+  # =========================================================
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: enterprise-copilot-server
+
+    command: pnpm --filter server dev
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: development
+
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+      REDIS_URL: redis://redis:6379
+
+      S3_ENDPOINT: http://localstack:4566
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      AWS_REGION: eu-central-1
+      AWS_DEFAULT_REGION: eu-central-1
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+      localstack:
+        condition: service_started
+
+    restart: unless-stopped
+
+
+  # =========================================================
+  # BullMQ Background Worker
+  # =========================================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: enterprise-copilot-worker
+
+    command: pnpm --filter worker dev
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: development
+
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+      REDIS_URL: redis://redis:6379
+
+      S3_ENDPOINT: http://localstack:4566
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      AWS_REGION: eu-central-1
+      AWS_DEFAULT_REGION: eu-central-1
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+      localstack:
+        condition: service_started
+
+    restart: unless-stopped
+
+
+  # =========================================================
+  # PostgreSQL + pgvector
+  # =========================================================
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: enterprise-copilot-postgres
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
+
+
+  # =========================================================
+  # Redis - BullMQ / cache / rate limiting
+  # =========================================================
+  redis:
+    image: redis:7-alpine
+    container_name: enterprise-copilot-redis
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes"
+      ]
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+    restart: unless-stopped
+
+
+  # =========================================================
+  # Localstack - local S3-compatible file storage
+  # =========================================================
+  localstack:
+    image: localstack/localstack:stable
+    container_name: enterprise-copilot-localstack
+
+    environment:
+      SERVICES: s3
+      PERSISTENCE: "1"
+      AWS_DEFAULT_REGION: eu-central-1
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
+
+    ports:
+      - "4566:4566"
+
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+    restart: unless-stopped
+
+
+# =========================================================
+# Persistent Docker Volumes
+# =========================================================
+volumes:
+  postgres_data:
+  redis_data:
+  localstack_data:

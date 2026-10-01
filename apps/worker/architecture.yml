@@ -1,0 +1,16 @@
+###################################################
+#                 tRPC Server
+###################################################
+#                     │
+#                     │ queue.add(...)
+#                     ▼
+#                     Redis
+#                     │
+#                     ▼
+#                     BullMQ Worker
+#                     │
+#                     ├── download document
+#                     ├── extract text
+#                     ├── chunk
+#                     ├── embed
+#                     └── store vectors
