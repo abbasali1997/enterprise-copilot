@@ -1,9 +1,10 @@
-﻿{
+{
   "name": "server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,9 +17,15 @@
     "@aws-sdk/s3-request-presigner": "^3.1143.0",
     "@trpc/server": "^11.19.0",
     "bullmq": "^6.3.10",
+    "cors": "^2.8.6",
     "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "http-status-code": "^2.1.0",
     "superjson": "^2.2.6",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6"
   }
 }
-
