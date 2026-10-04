@@ -237,3 +237,12 @@ volumes:
   postgres_data:
   redis_data:
   localstack_data:
+
+
+# In case the code gets updated!
+#
+#docker compose up -d --build --no-deps server
+#  •
+#--build: builds the image with your current files.
+#  •
+#-d: runs the container in the background.
