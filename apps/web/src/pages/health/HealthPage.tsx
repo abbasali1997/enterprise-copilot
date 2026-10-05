@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/lib/trpc";
+import { useTRPC } from "@/lib/trpc.ts";
 
 function HealthPage() {
   const trpc = useTRPC();
