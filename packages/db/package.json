@@ -1,10 +1,10 @@
 ﻿{
-  "name": "db",
+  "name": "@enterprise/db",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "generate": "prisma generate",
+    "generate": "prisma generate --config prisma7.config.ts",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
     "type-check": "tsc --noEmit -p tsconfig.json",
@@ -23,7 +23,8 @@
   "devDependencies": {
     "@types/pg": "^8.23.1",
     "prisma": "7.10.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   }
 }
-
-

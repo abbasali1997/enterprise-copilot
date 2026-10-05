@@ -22,7 +22,9 @@
     "express": "^5.2.1",
     "http-status-code": "^2.1.0",
     "superjson": "^2.2.6",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "@enterprise/auth": "workspace:*",
+    "@enterprise/db": "workspace:*"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

@@ -1,5 +1,5 @@
-﻿{
-  "name": "auth",
+{
+  "name": "@enterprise/auth",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,8 +12,16 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "jose": "^6.2.12",
+    "jsonwebtoken": "^9.0.3",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   }
 }
-
