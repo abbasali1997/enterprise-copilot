@@ -392,19 +392,25 @@ importers:
       '@prisma/client':
         specifier: 7.10.0
         version: 7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@7.0.2))(typescript@7.0.2)
+      bcrypt:
+        specifier: ^6.0.0
+        version: 6.0.0
       dotenv:
         specifier: ^18.0.5
         version: 18.0.5
       pg:
         specifier: ^8.23.1
         version: 8.23.1
-    devDependencies:
-      '@types/pg':
-        specifier: ^8.23.1
-        version: 8.23.1
       prisma:
         specifier: 7.10.0
         version: 7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
+    devDependencies:
+      '@types/bcrypt':
+        specifier: ^6.0.0
+        version: 6.0.0
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
 
   packages/llm:
     dependencies:

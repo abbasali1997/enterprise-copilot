@@ -2,9 +2,7 @@ import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "prisma/config";
 
-const rootEnvPath = fileURLToPath(
-  new URL("../../.env", import.meta.url)
-);
+const rootEnvPath = fileURLToPath(new URL("../../.env", import.meta.url));
 
 config({
   path: rootEnvPath,
@@ -15,6 +13,7 @@ export default defineConfig({
 
   migrations: {
     path: "prisma/migrations",
+    seed: "tsx src/seed.ts",
   },
 
   datasource: {

@@ -8,6 +8,6 @@ allowBuilds:
   bcrypt: set this to true or false
   esbuild: true
   msgpackr-extract: true
-  prisma: truw
+  prisma: true
   protobufjs: true
   workerd: false

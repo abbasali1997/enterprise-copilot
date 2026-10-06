@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@enterprise/db",
   "version": "1.0.0",
   "description": "",
@@ -6,6 +6,7 @@
   "scripts": {
     "generate": "prisma generate --config prisma7.config.ts",
     "migrate": "prisma migrate dev",
+    "seed": "prisma db seed ",
     "studio": "prisma studio",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,12 +18,14 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
+    "bcrypt": "^6.0.0",
     "dotenv": "^18.0.5",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "prisma": "7.10.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1",
-    "prisma": "7.10.0"
+    "@types/bcrypt": "^6.0.0",
+    "@types/pg": "^8.23.1"
   },
   "exports": {
     ".": "./src/index.ts"
