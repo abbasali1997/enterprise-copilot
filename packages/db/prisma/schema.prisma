@@ -1,13 +1,11 @@
 /**
-
-• User → OrganizationMember: One user can have many memberships; each membership belongs to one user.
-• Organization → OrganizationMember: One organization can have many memberships; each membership belongs to one organization.
-• User → Conversation: One user can have many conversations; each conversation belongs to one user.
-• Organization → Conversation: One organization can have many conversations; each conversation belongs to one organization.
-• Conversation → Message: One conversation can have many messages; each message belongs to one conversation.
-• User → Message: One user can have many messages; each message optionally belongs to one user.
-
- **/
+ * • User → OrganizationMember: One user can have many memberships; each membership belongs to one user.
+ * • Organization → OrganizationMember: One organization can have many memberships; each membership belongs to one organization.
+ * • User → Conversation: One user can have many conversations; each conversation belongs to one user.
+ * • Organization → Conversation: One organization can have many conversations; each conversation belongs to one organization.
+ * • Conversation → Message: One conversation can have many messages; each message belongs to one conversation.
+ * • User → Message: One user can have many messages; each message optionally belongs to one user.
+ */
 
 generator client {
   provider            = "prisma-client"
@@ -100,7 +98,7 @@ model OrganizationMember {
   id             String           @id @default(uuid())
   organizationId String
   userId         String
-  role           OrganizationRole
+  role           OrganizationRole @default(MEMBER)
   status         MembershipStatus @default(ACTIVE)
   joinedAt       DateTime         @default(now())
   createdAt      DateTime         @default(now())

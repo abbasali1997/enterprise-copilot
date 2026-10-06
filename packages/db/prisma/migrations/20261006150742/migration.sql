@@ -1,11 +1,3 @@
-/*
-  Warnings:
-
-  - The primary key for the `User` table will be changed. If it partially fails, the table could be left without primary key constraint.
-  - Added the required column `passwordHash` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Made the column `name` on table `User` required. This step will fail if there are existing NULL values in that column.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INVITED', 'SUSPENDED', 'DISABLED');
 
@@ -27,17 +19,20 @@ CREATE TYPE "MessageRole" AS ENUM ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL');
 -- CreateEnum
 CREATE TYPE "MessageStatus" AS ENUM ('PENDING', 'STREAMING', 'COMPLETED', 'FAILED', 'CANCELLED');
 
--- AlterTable
-ALTER TABLE "User" DROP CONSTRAINT "User_pkey",
-ADD COLUMN     "avatarUrl" TEXT,
-ADD COLUMN     "lastLoginAt" TIMESTAMP(3),
-ADD COLUMN     "passwordHash" TEXT NOT NULL,
-ADD COLUMN     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
-ALTER COLUMN "id" DROP DEFAULT,
-ALTER COLUMN "id" SET DATA TYPE TEXT,
-ALTER COLUMN "name" SET NOT NULL,
-ADD CONSTRAINT "User_pkey" PRIMARY KEY ("id");
-DROP SEQUENCE "User_id_seq";
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "avatarUrl" TEXT,
+    "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastLoginAt" TIMESTAMP(3),
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Organization" (
@@ -57,7 +52,7 @@ CREATE TABLE "OrganizationMember" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "role" "OrganizationRole" NOT NULL,
+    "role" "OrganizationRole" NOT NULL DEFAULT 'MEMBER',
     "status" "MembershipStatus" NOT NULL DEFAULT 'ACTIVE',
     "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,6 +93,9 @@ CREATE TABLE "Message" (
 
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Organization_slug_key" ON "Organization"("slug");
