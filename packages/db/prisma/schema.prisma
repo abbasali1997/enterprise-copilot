@@ -37,6 +37,14 @@ enum OrganizationRole {
   MEMBER
 }
 
+enum OrganizationInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
 enum MembershipStatus {
   INVITED
   ACTIVE
@@ -76,10 +84,12 @@ model User {
   updatedAt    DateTime   @updatedAt
   lastLoginAt  DateTime?
 
-  conversations           Conversation[]
-  memberships             OrganizationMember[]
-  messages                Message[]
-  organizationInvitations OrganizationInvitation[]
+  conversations Conversation[]
+  memberships   OrganizationMember[]
+  messages      Message[]
+
+  invitationsSent     OrganizationInvitation[] @relation("InvitationsSent")
+  invitationsAccepted OrganizationInvitation[] @relation("InvitationsAccepted")
 }
 
 model Organization {
@@ -115,23 +125,26 @@ model OrganizationMember {
 }
 
 model OrganizationInvitation {
-  id             String           @id @default(uuid())
-  email          String
-  organizationId String
-  role           OrganizationRole @default(MEMBER)
-  invitedById    String
-  tokenHash      String           @unique
-  expiresAt      DateTime         @default(dbgenerated("(now() + interval '48 hours')"))
-  acceptedAt     DateTime?
-  revokedAt      DateTime?
-  createdAt      DateTime         @default(now())
+  id               String                       @id @default(uuid())
+  email            String
+  organizationId   String
+  role             OrganizationRole             @default(MEMBER)
+  invitedByUserId  String
+  acceptedByUserId String?
+  tokenHash        String                       @unique
+  status           OrganizationInvitationStatus @default(PENDING)
+  expiresAt        DateTime                     @default(dbgenerated("(now() + interval '48 hours')"))
+  createdAt        DateTime                     @default(now())
+  respondedAt      DateTime?
 
-  invitedBy    User         @relation(fields: [invitedById], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedByUser  User         @relation("InvitationsSent", fields: [invitedByUserId], references: [id])
+  acceptedByUser User?        @relation("InvitationsAccepted", fields: [acceptedByUserId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, email])
   @@index([organizationId])
   @@index([email])
+  @@index([organizationId, email])
+  @@index([organizationId, email, status])
 }
 
 model Conversation {
