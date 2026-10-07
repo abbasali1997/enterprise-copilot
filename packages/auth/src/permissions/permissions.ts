@@ -1,17 +1,17 @@
-export const PERMISSIONS = {
-  ORGANIZATION_MANAGE: "organization:manage",
+export enum PERMISSIONS {
+  ORGANIZATION_MANAGE = "organization:manage",
 
-  MEMBER_INVITE: "member:invite",
-  MEMBER_REMOVE: "member:remove",
+  MEMBER_INVITE = "member:invite",
+  MEMBER_REMOVE = "member:remove",
 
-  DOCUMENT_READ: "document:read",
-  DOCUMENT_UPLOAD: "document:upload",
-  DOCUMENT_DELETE: "document:delete",
+  DOCUMENT_READ = "document:read",
+  DOCUMENT_UPLOAD = "document:upload",
+  DOCUMENT_DELETE = "document:delete",
 
-  ASSISTANT_CREATE: "assistant:create",
+  ASSISTANT_CREATE = "assistant:create",
 
-  CHAT_USE: "chat:use",
-} as const;
+  CHAT_USE = "chat:use",
+}
 
 export const rolePermissions = {
   OWNER: [

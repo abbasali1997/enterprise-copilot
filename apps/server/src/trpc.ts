@@ -4,7 +4,7 @@ import type { Context } from "./context.js";
 const t = initTRPC.context<Context>().create();
 
 const isAuthenticated = t.middleware(({ ctx, next }) => {
-  if (!ctx.user) {
+  if (!ctx.user?.id || !ctx.user.organizationId || !ctx.user.role) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "You must be logged in",
@@ -14,7 +14,11 @@ const isAuthenticated = t.middleware(({ ctx, next }) => {
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user,
+      user: {
+        id: ctx.user.id,
+        organizationId: ctx.user.organizationId,
+        role: ctx.user.role,
+      },
     },
   });
 });
