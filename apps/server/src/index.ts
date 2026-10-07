@@ -3,6 +3,7 @@ import cors from "cors";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers/index.js";
 import { createContext } from "./context.js";
+import { logger } from "./utils/logger.js";
 
 const SERVER_PORT = process.env.SERVER_PORT || 3000;
 
@@ -34,6 +35,6 @@ app.use(
 // Server
 app.listen(SERVER_PORT, () => {
   // Todo: Add logger
-  console.log("Server is Running on PORT: ", SERVER_PORT);
-  console.log(`tRPC endpoint: http://localhost:${SERVER_PORT}/trpc`);
+  logger.info(`Server is Running on PORT: ${SERVER_PORT}`);
+  logger.info(`tRPC endpoint: http://localhost:${SERVER_PORT}/trpc`);
 });

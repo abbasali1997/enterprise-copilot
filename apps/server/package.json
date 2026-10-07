@@ -15,16 +15,17 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",
     "@aws-sdk/s3-request-presigner": "^3.1143.0",
+    "@enterprise/auth": "workspace:*",
+    "@enterprise/db": "workspace:*",
     "@trpc/server": "^11.19.0",
     "bullmq": "^6.3.10",
+    "chalk": "^6.0.1",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "http-status-code": "^2.1.0",
     "superjson": "^2.2.6",
-    "zod": "^4.6.5",
-    "@enterprise/auth": "workspace:*",
-    "@enterprise/db": "workspace:*"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

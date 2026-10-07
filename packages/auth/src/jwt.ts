@@ -1,4 +1,4 @@
-import { type JwtPayload, verify, sign } from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { OrganizationRole } from "./permissions/roles.ts";
 
 const JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY;
@@ -32,7 +32,7 @@ export const generateJWT = ({
     aud: "enterprise-copilot-api",
   };
 
-  return sign(jwtPayload, privateKey, {
+  return jwt.sign(jwtPayload, privateKey, {
     algorithm: "RS256",
     expiresIn: "15m",
   });
@@ -43,5 +43,5 @@ export const verifyToken = (token: string): string | ExtendedJWTPayload => {
     throw new Error("Missing JWT key");
   }
 
-  return verify(token, JWT_PRIVATE_KEY) as ExtendedJWTPayload;
+  return jwt.verify(token, JWT_PRIVATE_KEY) as ExtendedJWTPayload;
 };
