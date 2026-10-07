@@ -1,4 +1,5 @@
 import { type Prisma, prisma } from "@enterprise/db";
+import { generateInvitationToken } from "../services/organization.service.js";
 
 const slugify = (name: string, count = 0) => {
   return name
@@ -29,11 +30,14 @@ export const createOrganization = async (
   });
 };
 
-export const createOrganizationMember = (input: {
-  organizationId: string;
-  userId: string;
-  role: "OWNER" | "ADMIN" | "MEMBER";
-}, db: Prisma.TransactionClient = prisma) => {
+export const createOrganizationMember = (
+  input: {
+    organizationId: string;
+    userId: string;
+    role: "OWNER" | "ADMIN" | "MEMBER";
+  },
+  db: Prisma.TransactionClient = prisma,
+) => {
   const { organizationId, userId, role } = input;
 
   return db.organizationMember.create({
@@ -41,6 +45,23 @@ export const createOrganizationMember = (input: {
       organizationId,
       userId,
       role,
+    },
+  });
+};
+
+export const inviteOrganizationMember = async (input: {
+  email: string;
+  organizationId: string;
+  role: "MEMBER" | "ADMIN";
+  invitedById: string;
+}) => {
+  const tokenHash = generateInvitationToken();
+
+  return await prisma.organizationInvitation.create({
+    data: {
+      ...input,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });
 };
