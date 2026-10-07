@@ -4,6 +4,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers/index.js";
 import { createContext } from "./context.js";
 import { logger } from "./utils/logger.js";
+import { handleTRPCError } from "./utils/errors.js";
 
 const SERVER_PORT = process.env.SERVER_PORT || 3000;
 
@@ -29,6 +30,10 @@ app.use(
   createExpressMiddleware({
     router: appRouter,
     createContext,
+
+    onError({ error, path }) {
+      handleTRPCError(error, path);
+    },
   }),
 );
 

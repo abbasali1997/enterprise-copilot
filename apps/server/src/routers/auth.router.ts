@@ -2,12 +2,13 @@ import { TRPCError } from "@trpc/server";
 import { publicProcedure, router } from "../trpc.js";
 import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 import { generateJWT, hashPassword, verifyPassword } from "@enterprise/auth";
-import { prisma } from "@enterprise/db";
+import { Prisma, prisma } from "@enterprise/db";
 import {
   createOrganization,
   createOrganizationMember,
 } from "../repositories/organization.repository.js";
 import { createUser } from "../repositories/user.repository.js";
+import { logger } from "../utils/logger.js";
 
 export const authRouter = router({
   login: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
@@ -78,41 +79,71 @@ export const authRouter = router({
     .mutation(async ({ input }) => {
       const { name, email, password, organizationName } = input;
 
-      const passwordHash = hashPassword(password);
+      try {
+        const passwordHash = hashPassword(password);
 
-      return prisma.$transaction(async (tx) => {
-        const newUser = await createUser(
-          {
-            name,
-            email,
-            passwordHash,
-          },
-          tx,
-        );
+        return await prisma.$transaction(async (tx) => {
+          const newUser = await createUser({ name, email, passwordHash }, tx);
 
-        const newOrganization = await createOrganization(organizationName, tx);
+          const newOrganization = await createOrganization(
+            organizationName,
+            tx,
+          );
 
-        const newMember = await createOrganizationMember(
-          {
-            role: "OWNER",
+          const newMember = await createOrganizationMember(
+            {
+              role: "OWNER",
+              userId: newUser.id,
+              organizationId: newOrganization.id,
+            },
+            tx,
+          );
+
+          const token = generateJWT({
             userId: newUser.id,
             organizationId: newOrganization.id,
-          },
-          tx,
-        );
+            role: newMember.role,
+          });
 
-        const token = generateJWT({
-          userId: newUser.id,
-          organizationId: newOrganization.id,
-          role: newMember.role,
+          logger.success(
+            `New user: ${newUser.name} registered for organization: ${newOrganization.slug}`,
+          );
+
+          return {
+            token,
+            user: { id: newUser.id, email: newUser.email, name: newUser.name },
+            organizationId: newOrganization.id,
+            role: newMember.role,
+          };
         });
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
 
-        return {
-          token,
-          user: { id: newUser.id, email: newUser.email, name: newUser.name },
-          organizationId: newOrganization.id,
-          role: newMember.role,
-        };
-      });
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          const target = error.meta?.target;
+          const isEmailConflict = Array.isArray(target)
+            ? target.includes("email")
+            : typeof target === "string" && target.includes("email");
+
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: isEmailConflict
+              ? "An account with this email already exists"
+              : "Registration conflicts with an existing record",
+            cause: error,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to register. Please try again later.",
+          cause: error,
+        });
+      }
     }),
 });
