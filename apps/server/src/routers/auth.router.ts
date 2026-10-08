@@ -3,12 +3,10 @@ import { publicProcedure, router } from "../trpc.js";
 import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 import { generateJWT, hashPassword, verifyPassword } from "@enterprise/auth";
 import { Prisma, prisma } from "@enterprise/db";
-import {
-  createOrganization,
-  createOrganizationMember,
-} from "../repositories/organization.repository.js";
+import { createOrganizationMember } from "../repositories/organization.repository.js";
 import { createUser } from "../repositories/user.repository.js";
 import { logger } from "../utils/logger.js";
+import { createOrganization } from "../services/organization.service.js";
 
 export const authRouter = router({
   login: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
