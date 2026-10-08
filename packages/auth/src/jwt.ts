@@ -1,7 +1,7 @@
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { OrganizationRole } from "./permissions/roles.ts";
 
-const JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 interface ExtendedJWTPayload extends JwtPayload {
   organizationId: string;
@@ -17,11 +17,9 @@ export const generateJWT = ({
   organizationId: string;
   role: OrganizationRole;
 }) => {
-  if (!JWT_PRIVATE_KEY) {
-    throw new Error("Missing JWT key");
+  if (!JWT_SECRET) {
+    throw new Error("Missing JWT_SECRET");
   }
-
-  const privateKey = JWT_PRIVATE_KEY.replace(/\\n/g, "\n");
 
   const jwtPayload: ExtendedJWTPayload = {
     sub: userId,
@@ -32,16 +30,33 @@ export const generateJWT = ({
     aud: "enterprise-copilot-api",
   };
 
-  return jwt.sign(jwtPayload, privateKey, {
-    algorithm: "RS256",
+  return jwt.sign(jwtPayload, JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: "15m",
   });
 };
 
 export const verifyToken = (token: string): string | ExtendedJWTPayload => {
-  if (!JWT_PRIVATE_KEY) {
-    throw new Error("Missing JWT key");
+  if (!JWT_SECRET) {
+    throw new Error("Missing JWT_SECRET");
   }
 
-  return jwt.verify(token, JWT_PRIVATE_KEY) as ExtendedJWTPayload;
+  const payload = jwt.verify(token, JWT_SECRET, {
+    algorithms: ["HS256"],
+    issuer: "enterprise-copilot-auth",
+    audience: "enterprise-copilot-api",
+  });
+
+  if (
+    typeof payload === "string" ||
+    typeof payload.sub !== "string" ||
+    !payload.sub ||
+    typeof payload.organizationId !== "string" ||
+    !payload.organizationId ||
+    !["OWNER", "ADMIN", "MEMBER"].includes(payload.role)
+  ) {
+    throw new jwt.JsonWebTokenError("Invalid token payload");
+  }
+
+  return payload as ExtendedJWTPayload;
 };

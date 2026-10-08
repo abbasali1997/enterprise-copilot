@@ -10,12 +10,29 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
     if (type !== "Bearer" || !token) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: `Unauthorized access token: ${token}`,
+        message: "Invalid Authorization header",
       });
     }
 
     // Verify Token
-    const jwtPayload = verifyToken(token);
+    let jwtPayload: ReturnType<typeof verifyToken>;
+    try {
+      jwtPayload = verifyToken(token);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        ["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(
+          error.name,
+        )
+      ) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid or expired access token",
+          cause: error,
+        });
+      }
+      throw error;
+    }
 
     if (typeof jwtPayload === "string") {
       throw new TRPCError({
