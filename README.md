@@ -1,6 +1,8 @@
 # Enterprise Copilot
 
-EnterpriseCopilot is a secure multi-tenant AI knowledge and automation platform for enterprise teams. It combines permission-aware RAG, streaming chat, multi-provider LLM routing, MCP-based tools, human approval for write actions, audit logs and asynchronous document ingestion.
+EnterpriseCopilot is a secure multi-tenant AI knowledge and automation platform for enterprise teams. It combines
+permission-aware RAG, streaming chat, multi-provider LLM routing, MCP-based tools, human approval for write actions,
+audit logs and asynchronous document ingestion.
 
 ## Requirements
 
@@ -43,7 +45,8 @@ AWS_REGION=eu-central-1
 AWS_DEFAULT_REGION=eu-central-1
 ```
 
-For LocalStack, replace the example `LOCALSTACK_AUTH_TOKEN` with your own token if required by the configured image. PostgreSQL and Redis can run without LocalStack for auth and organization development.
+For LocalStack, replace the example `LOCALSTACK_AUTH_TOKEN` with your own token if required by the configured image.
+PostgreSQL and Redis can run without LocalStack for auth and organization development.
 
 Authentication requires an RSA private key for RS256 JWTs. Generate a development key:
 
@@ -59,7 +62,8 @@ PASTE_GENERATED_KEY_CONTENT_HERE
 -----END PRIVATE KEY-----"
 ```
 
-Use actual line breaks in the PEM value. Signing currently normalizes literal `\n` sequences, but verification does not. Keep `.env` and private keys out of version control.
+Use actual line breaks in the PEM value. Signing currently normalizes literal `\n` sequences, but verification does not.
+Keep `.env` and private keys out of version control.
 
 ### 2. Install dependencies
 
@@ -68,7 +72,9 @@ npm install --global pnpm@11
 pnpm install
 ```
 
-If installation fails with `ERR_PNPM_IGNORED_BUILDS` for bcrypt, update the existing entry in `pnpm-workspace.yaml` from `bcrypt: set this to true or false` to `bcrypt: true`, then rerun installation. If prompted to approve builds, use `pnpm approve-builds` and approve the required native dependencies.
+If installation fails with `ERR_PNPM_IGNORED_BUILDS` for bcrypt, update the existing entry in `pnpm-workspace.yaml` from
+`bcrypt: set this to true or false` to `bcrypt: true`, then rerun installation. If prompted to approve builds, use
+`pnpm approve-builds` and approve the required native dependencies.
 
 ### 3. Start the supporting services
 
@@ -82,7 +88,8 @@ For local S3 development, also start LocalStack:
 docker compose up -d localstack
 ```
 
-The configured services expose PostgreSQL on port 5432, Redis on 6379, and LocalStack on 4566. Starting LocalStack does not automatically create the S3 bucket; create the configured bucket before using uploads.
+The configured services expose PostgreSQL on port 5432, Redis on 6379, and LocalStack on 4566. Starting LocalStack does
+not automatically create the S3 bucket; create the configured bucket before using uploads.
 
 ### 4. Prepare the database
 
@@ -100,7 +107,8 @@ pnpm --filter @enterprise/db exec prisma migrate dev --config prisma7.config.ts 
 pnpm --filter @enterprise/db generate
 ```
 
-The custom Prisma configuration is named `prisma7.config.ts`, so pass `--config` explicitly for commands other than the package's `generate` script.
+The custom Prisma configuration is named `prisma7.config.ts`, so pass `--config` explicitly for commands other than the
+package's `generate` script.
 
 ### 5. Start the server and web app
 
@@ -112,7 +120,9 @@ Server:
 node --env-file=.env --import tsx --watch apps/server/src/index.ts
 ```
 
-Loading `.env` before imports ensures the database and JWT helpers receive their configuration. The package also has `pnpm --filter server dev`, which runs `tsx watch src/index.ts`; when using that command, ensure the root environment variables are already loaded into the process.
+Loading `.env` before imports ensures the database and JWT helpers receive their configuration. The package also has
+`pnpm --filter server dev`, which runs `tsx watch src/index.ts`; when using that command, ensure the root environment
+variables are already loaded into the process.
 
 Web app:
 
@@ -120,13 +130,14 @@ Web app:
 pnpm --filter web dev
 ```
 
-| Service | Address |
-| --- | --- |
-| Web app | http://localhost:5173 |
-| tRPC API | http://localhost:3000/trpc |
-| LocalStack, when started | http://localhost:4566 |
+| Service                  | Address                    |
+|--------------------------|----------------------------|
+| Web app                  | http://localhost:5173      |
+| tRPC API                 | http://localhost:3000/trpc |
+| LocalStack, when started | http://localhost:4566      |
 
-The web app sends requests to `/trpc`. Vite proxies these requests to `http://localhost:3000`; update `apps/web/vite.config.ts` if you change the server port.
+The web app sends requests to `/trpc`. Vite proxies these requests to `http://localhost:3000`; update
+`apps/web/vite.config.ts` if you change the server port.
 
 ## Database tools
 
@@ -148,13 +159,14 @@ Optionally seed a disposable development database:
 pnpm --filter @enterprise/db exec prisma db seed --config prisma7.config.ts
 ```
 
-**The seed deletes existing users, organizations, conversations, and messages.** Its deletion order may need updating when invitation records already exist. It creates organization `ORG-I` and these development accounts:
+**The seed deletes existing users, organizations, conversations, and messages.** Its deletion order may need updating
+when invitation records already exist. It creates organization `ORG-I` and these development accounts:
 
-| Email | Password | Organization role |
-| --- | --- | --- |
-| admin@example.com | admin123 | ADMIN |
-| employee1@example.com | user123 | MEMBER |
-| employee2@example.com | user123 | MEMBER |
+| Email                 | Password | Organization role |
+|-----------------------|----------|-------------------|
+| admin@example.com     | admin123 | ADMIN             |
+| employee1@example.com | user123  | MEMBER            |
+| employee2@example.com | user123  | MEMBER            |
 
 ## Checks
 
@@ -174,12 +186,17 @@ The package `test` scripts are placeholders and do not currently run a test suit
 
 ## Docker application containers
 
-The Compose file also defines `server`, `web`, and `worker` containers. The local development instructions above avoid the current application-container configuration gaps:
+The Compose file also defines `server`, `web`, and `worker` containers. The local development instructions above avoid
+the current application-container configuration gaps:
 
-- The Dockerfile installs pnpm 10 while the root package requests pnpm 11. Align the versions and resolve native build approvals before relying on image builds.
-- Generate the Prisma client during image creation, or generate it on the host before building so the source copy includes it. The generated client is gitignored and is not generated by the Dockerfile.
-- The containerized web app needs its Vite proxy target changed to `http://server:3000`. Its current `localhost` target points to the web container itself; `VITE_API_URL` is not read by the current client/proxy code.
-- The worker package has no `dev` script or runnable entry point yet. Start only the implemented application services.
+- Generate the Prisma client during image creation, or generate it on the host before building so the source copy
+  includes it. The generated client is gitignored and is not generated by the Dockerfile.
+- The containerized web app needs its Vite proxy target changed to `http://server:3000`. Its current `localhost` target
+  points to the web container itself; `VITE_API_URL` is not read by the current client/proxy code.
+- The worker entry point is `apps/worker/index.ts`. Start it locally with `pnpm --filter worker dev`, or include
+  `worker` in the Compose startup command. It reads `REDIS_URL`, `WORKER_QUEUE_NAME` (default: `documents`), and
+  `WORKER_CONCURRENCY` (default: `5`). Only the `ping` job is implemented; document ingestion and workflow processors
+  still need to be added. Unsupported jobs fail explicitly.
 - Docker startup does not apply database migrations. Run them explicitly before using the API.
 
 After addressing these items, build and start the server and web containers:
@@ -209,4 +226,5 @@ docker compose logs -f postgres redis
 docker compose down
 ```
 
-`docker compose down` preserves the named database, Redis, and LocalStack volumes. Stop local development processes with Ctrl+C.
+`docker compose down` preserves the named database, Redis, and LocalStack volumes. Stop local development processes with
+Ctrl+C.
