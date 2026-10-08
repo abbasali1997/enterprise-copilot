@@ -1,9 +1,5 @@
-export type AuthenticatedUser = {
-  id: string;
-  email: string;
-};
+import { z } from "zod";
+import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 
-export type AuthSession = {
-  user: AuthenticatedUser;
-  organizationId: string | null;
-};
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

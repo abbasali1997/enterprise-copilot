@@ -253,7 +253,6 @@ export const acceptOrganizationInvite = async (
       let membership = await findOrganizationMember(
         {
           organizationId: invitation.organizationId,
-
           userId: user.id,
         },
         tx,
@@ -263,9 +262,7 @@ export const acceptOrganizationInvite = async (
         membership = await createOrganizationMember(
           {
             organizationId: invitation.organizationId,
-
             userId: user.id,
-
             role: invitation.role,
           },
           tx,

@@ -38,6 +38,12 @@ export const createOrganizationMember = (
   });
 };
 
+export const findOrganizationMembers = (
+  args: Prisma.OrganizationMemberFindManyArgs,
+) => {
+  return prisma.organizationMember.findMany(args);
+};
+
 export const findOrganizationMember = (
   input: {
     organizationId: string;

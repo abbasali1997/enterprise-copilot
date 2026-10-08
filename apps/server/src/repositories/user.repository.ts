@@ -24,3 +24,10 @@ export const createUser = (
 ) => {
   return db.user.create({ data });
 };
+
+export const updateUser = (
+  args: Prisma.UserUpdateArgs,
+  db: Prisma.TransactionClient = prisma,
+) => {
+  return db.user.update(args);
+};
