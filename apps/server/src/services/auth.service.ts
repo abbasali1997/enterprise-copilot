@@ -4,6 +4,7 @@ import { prisma } from "@enterprise/db";
 import {
   createUser,
   findUserByEmail,
+  findUserById,
   updateUser,
 } from "../repositories/user.repository.js";
 import { createOrganization } from "./organization.service.js";
@@ -15,6 +16,19 @@ import { logger } from "../utils/logger.js";
 import { registerResponseError } from "../error-handlers/auth.errorHandler.js";
 import { TRPCError } from "@trpc/server";
 import { normalizeEmail } from "../utils/helpers.js";
+
+export const getLoggedInUser = async (userId: string) => {
+  const user = await findUserById(userId);
+
+  if (!user || user.status !== "ACTIVE") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is unavailable or inactive",
+    });
+  }
+
+  return { id: user.id, email: user.email, name: user.name };
+};
 
 export const loginUser = async (input: LoginInput) => {
   const normalizedEmail = normalizeEmail(input.email);
@@ -75,7 +89,7 @@ export const loginUser = async (input: LoginInput) => {
     data: { lastLoginAt: new Date() },
   });
 
-  logger.success(`User "${user.name}" logged in successfully`);
+  logger.success(`User "${user.name}" logged in.`);
 
   return {
     token,

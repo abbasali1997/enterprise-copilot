@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from "node:url";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,12 +11,16 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+  plugins: [
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    tailwindcss(),
+  ],
   server: {
     port: 5173,
     proxy: {
       "/trpc": {
-        target: "http://localhost:3000",
+        target: process.env.VITE_API_URL || "http://localhost:3000",
         changeOrigin: true,
       },
     },

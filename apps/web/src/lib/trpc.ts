@@ -6,7 +6,15 @@ import type { AppRouter } from "../../../server/src/routers";
 export const queryClient = new QueryClient();
 
 export const trpcClient = createTRPCClient<AppRouter>({
-  links: [httpBatchLink({ url: "/trpc" })],
+  links: [
+    httpBatchLink({
+      url: "/trpc",
+      headers: () => {
+        const token = localStorage.getItem("token");
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      },
+    }),
+  ],
 });
 
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
