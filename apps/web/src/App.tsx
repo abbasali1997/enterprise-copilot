@@ -15,6 +15,27 @@ import { useContext } from "react";
 import WorkspacePage from "@/pages/workspace/WorkspacePage.tsx";
 import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 
+const ProtectedRoute = () => {
+  const value = useContext(AuthContext);
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
+  if (value?.isLoading) {
+    return (
+      <div
+        role="status"
+        className="flex min-h-screen items-center justify-center text-gray-500"
+      >
+        Checking your session...
+      </div>
+    );
+  }
+
+  if (!value || !value.user) return <Navigate to={from} replace />;
+
+  return <Outlet />;
+};
+
 const ProtectedAdminRoute = () => {
   const value = useContext(AuthContext);
   const location = useLocation();
@@ -53,10 +74,12 @@ function App() {
             <Route path="/health" Component={HealthPage} />
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<AuthPage />} />
-            <Route
-              path="/workspaces/change"
-              element={<ChangeWorkspacePage />}
-            />
+            <Route element={<ProtectedRoute />}>
+              <Route
+                path="/workspaces/change"
+                element={<ChangeWorkspacePage />}
+              />
+            </Route>
             <Route element={<ProtectedAdminRoute />}>
               <Route
                 path="/workspace/:organizationId"

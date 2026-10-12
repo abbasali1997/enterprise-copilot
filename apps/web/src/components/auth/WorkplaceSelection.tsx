@@ -53,7 +53,7 @@ function WorkplaceSelection({
           {workspaceList.map((workspace) => (
             <label
               key={workspace.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition focus-within:ring-2 focus-within:ring-indigo-500 ${selectedId === workspace.id ? "border-indigo-500 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"} ${busy ? "cursor-wait opacity-70" : ""}`}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition focus-within:ring-2 focus-within:ring-indigo-500 ${selectedId === workspace.id ? "border-indigo-500 " : "border-gray-200 bg-white hover:bg-gray-50"} ${busy ? "cursor-wait opacity-70" : ""}`}
             >
               <input
                 type="radio"
@@ -65,7 +65,7 @@ function WorkplaceSelection({
               />
               <img
                 className="h-10 w-10 shrink-0 rounded-full object-cover"
-                src="/Portrait.png"
+                src={workspace.logoUrl ?? "/No-Image.png"}
                 alt=""
               />
               <span className="min-w-0">

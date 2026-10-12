@@ -11,10 +11,12 @@ function ChangeWorkspacePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isRedirecting, setIsRedirecting] = useState(false);
+
   const workspaces = useQuery({
     ...trpc.organization.list.queryOptions(),
     enabled: !!auth?.user,
   });
+
   const change = useMutation(
     trpc.organization.changeOrganization.mutationOptions({
       onSuccess: async (data) => {
