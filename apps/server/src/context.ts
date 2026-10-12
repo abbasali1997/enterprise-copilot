@@ -1,45 +1,19 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { verifyToken } from "@enterprise/auth";
-import { TRPCError } from "@trpc/server";
 
 export function createContext({ req, res }: CreateExpressContextOptions) {
-  const authHeader = req.headers["authorization"];
-  if (authHeader) {
-    const [type, token] = authHeader.split(" ");
+  const anonymousContext = { req, res, user: null };
 
-    if (type !== "Bearer" || !token) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Invalid Authorization header",
-      });
-    }
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return anonymousContext;
 
-    // Verify Token
-    let jwtPayload: ReturnType<typeof verifyToken>;
-    try {
-      jwtPayload = verifyToken(token);
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        ["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(
-          error.name,
-        )
-      ) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid or expired access token",
-          cause: error,
-        });
-      }
-      throw error;
-    }
+  const match = /^Bearer\s+(\S+)$/i.exec(authHeader.trim());
+  const token = match?.[1];
+  if (!token) return anonymousContext;
 
-    if (typeof jwtPayload === "string") {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Invalid token payload",
-      });
-    }
+  try {
+    const jwtPayload = verifyToken(token);
+    if (typeof jwtPayload === "string") return anonymousContext;
 
     return {
       req,
@@ -50,13 +24,19 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
         role: jwtPayload.role,
       },
     };
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      ["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(
+        error.name,
+      )
+    ) {
+      // Authentication is optional here; protectedProcedure enforces it.
+      return anonymousContext;
+    }
+    // Configuration and unexpected server failures must remain visible.
+    throw error;
   }
-
-  return {
-    req,
-    res,
-    user: {},
-  };
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>;

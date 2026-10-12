@@ -54,7 +54,7 @@ class Logger {
     const timestamp = new Date().toISOString();
 
     process.stdout.write(
-      `${timestamp} ${level}${context ? ` [${context}]` : ""} ${message}\n`,
+      `${timestamp} ${level}: ${context ? `[${context}]` : ""} ${message}\n`,
     );
   }
 

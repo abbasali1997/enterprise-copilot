@@ -10,15 +10,20 @@ const AuthPage = () => {
   const value = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const navigate = useNavigate();
 
   const login = useMutation(
     trpc.auth.login.mutationOptions({
       onSuccess: (data) => {
+        setIsRedirecting(true);
         localStorage.setItem("token", data.token);
         value?.setUser(data.user);
-        navigate("/");
+
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
       },
       onError: (error) => {
         console.error(error);
@@ -28,6 +33,7 @@ const AuthPage = () => {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (login.isPending || isRedirecting) return;
 
     login.mutate({
       email,
@@ -40,7 +46,7 @@ const AuthPage = () => {
       <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Sign in to CompanyGPT
+            Sign In To Your Organization
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">
@@ -115,27 +121,28 @@ const AuthPage = () => {
           </div>
 
           <button
-            disabled={login.isPending}
+            disabled={login.isPending || isRedirecting}
             type="submit"
             className="
               w-full
               rounded-lg
-              bg-gray-900
+              bg-indigo-500
               px-4
               py-2.5
               text-sm
               font-medium
               text-white
               transition
-              hover:bg-gray-800
+              hover:bg-gray-900
               focus:outline-none
               focus:ring-2
               focus:ring-gray-900
               focus:ring-offset-2
               disabled:bg-red-900
             "
+            style={{ cursor: "pointer" }}
           >
-            {!login.isPending ? "Sign in" : "Loading..."}
+            {isRedirecting ? "Redirecting" : login.isPending ? "Loading..." : "Sign in"}
           </button>
         </form>
       </div>
