@@ -48,14 +48,27 @@ async function main() {
 
   console.log("Users created.");
 
-  console.log("Creating organization");
+  console.log("Creating organizations");
 
-  const newOrganization = await prisma.organization.create({
-    data: {
-      name: "ORG-I",
-      slug: slugify("ORG-I"),
-    },
+  await prisma.organization.createMany({
+    data: [
+      {
+        name: "ORG-I",
+        slug: slugify("ORG-I"),
+      },
+      {
+        name: "ORG-II",
+        slug: slugify("ORG-II"),
+      },
+    ],
   });
+
+  const organizations = await prisma.organization.findMany();
+
+  if (!organizations[0] || !organizations[1]) {
+    console.error("Error creating organizations.");
+    process.exit(1);
+  }
 
   console.log("Organization created.");
 
@@ -80,7 +93,7 @@ async function main() {
   const data = [];
   for (const user of users) {
     data.push({
-      organizationId: newOrganization.id,
+      organizationId: organizations[0].id,
       userId: user.id,
     });
   }
@@ -89,7 +102,12 @@ async function main() {
     data: [
       ...data,
       {
-        organizationId: newOrganization.id,
+        organizationId: organizations[0].id,
+        userId: adminUser.id,
+        role: "ADMIN",
+      },
+      {
+        organizationId: organizations[1].id,
         userId: adminUser.id,
         role: "ADMIN",
       },

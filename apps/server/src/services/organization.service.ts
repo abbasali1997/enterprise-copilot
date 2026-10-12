@@ -117,6 +117,7 @@ export const selectOrganization = async (
       id: membership.organizationId,
       name: membership.organization.name,
       slug: membership.organization.slug,
+      logoUrl: membership.organization.logoUrl,
       role: membership.role,
     },
     accessToken: generateJWT({

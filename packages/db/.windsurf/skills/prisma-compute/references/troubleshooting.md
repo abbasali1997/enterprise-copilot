@@ -26,7 +26,8 @@ Do not print unredacted secrets.
 
 ## `prisma.compute.ts` Not Picked Up
 
-This only matters when the project is supposed to use a config-backed deploy. A simple app without `prisma.compute.ts` can still deploy with explicit `app deploy` flags.
+This only matters when the project is supposed to use a config-backed deploy. A simple app without `prisma.compute.ts`
+can still deploy with explicit `app deploy` flags.
 
 Symptoms:
 
@@ -66,9 +67,11 @@ Fix:
 - remove unknown top-level keys
 - pass a target for multi-app build/run commands, such as `app build web`
 - pass an existing `apps` key for multi-app deploys, such as `app deploy api`
-- for `nuxt`, `astro`, and `nestjs`, prefer strategy defaults unless a custom `build` override is intentional; current configs allow the override
+- for `nuxt`, `astro`, and `nestjs`, prefer strategy defaults unless a custom `build` override is intentional; current
+  configs allow the override
 - for `framework: "custom"`, set both `build.outputDirectory` and `build.entrypoint`
-- when `build.outputDirectory` is set for a configurable framework, also set `build.entrypoint` if the framework needs a configured runtime entrypoint
+- when `build.outputDirectory` is set for a configurable framework, also set `build.entrypoint` if the framework needs a
+  configured runtime entrypoint
 
 Minimal recovery config:
 
@@ -96,7 +99,8 @@ If the integrated deploy cannot complete, scaffold succeeds but deploy should be
 
 ## Accidental Prisma Postgres Provisioning
 
-With PostgreSQL, no `--database-url`, and no `--no-prisma-postgres`, setup can provision Prisma Postgres. For local smoke tests, pass:
+With PostgreSQL, no `--database-url`, and no `--no-prisma-postgres`, setup can provision Prisma Postgres. For local
+smoke tests, pass:
 
 ```bash
 --no-prisma-postgres --database-url "postgresql://USER:PASSWORD@HOST:PORT/DB"
@@ -118,7 +122,7 @@ Symptoms:
 Fix:
 
 ```bash
-bunx @prisma/cli@latest auth login
+bunx @prisma/cli@latest auth auth
 bunx @prisma/cli@latest auth whoami
 bunx @prisma/cli@latest auth workspace list --json
 ```
@@ -131,9 +135,12 @@ bunx @prisma/cli@latest auth whoami --json
 bunx @prisma/cli@latest project list --json
 ```
 
-For a human terminal, `auth workspace use` with no argument opens an interactive picker or selects the only local OAuth workspace without prompting. In non-interactive or `--json` mode, use `auth workspace use <id-or-name>` instead.
+For a human terminal, `auth workspace use` with no argument opens an interactive picker or selects the only local OAuth
+workspace without prompting. In non-interactive or `--json` mode, use `auth workspace use <id-or-name>` instead.
 
-If the active workspace was logged out or its token refresh failed, the CLI intentionally stays signed out for OAuth commands rather than falling through to another cached workspace. Recover by running `auth workspace list --json` and then `auth workspace use <workspace-id>`.
+If the active workspace was logged out or its token refresh failed, the CLI intentionally stays signed out for OAuth
+commands rather than falling through to another cached workspace. Recover by running `auth workspace list --json` and
+then `auth workspace use <workspace-id>`.
 
 To remove only one local OAuth workspace session:
 
@@ -153,9 +160,12 @@ bunx @prisma/cli@latest auth whoami
 bunx @prisma/cli@latest app deploy --json --no-interactive --prod --yes --env .env
 ```
 
-If `PRISMA_SERVICE_TOKEN` is set and non-empty, it is the active auth source and local OAuth workspace switching is unavailable for command execution. Unset `PRISMA_SERVICE_TOKEN` before using `auth workspace use` to change local OAuth workspace context.
+If `PRISMA_SERVICE_TOKEN` is set and non-empty, it is the active auth source and local OAuth workspace switching is
+unavailable for command execution. Unset `PRISMA_SERVICE_TOKEN` before using `auth workspace use` to change local OAuth
+workspace context.
 
-If `PRISMA_SERVICE_TOKEN` is set but empty, the CLI errors before trying browser-login credentials. Unset it or provide a valid workspace service token. Never echo, log, or paste the token value; only check whether it is present.
+If `PRISMA_SERVICE_TOKEN` is set but empty, the CLI errors before trying browser-login credentials. Unset it or provide
+a valid workspace service token. Never echo, log, or paste the token value; only check whether it is present.
 
 Local storage hints for debugging:
 
@@ -182,7 +192,8 @@ bunx @prisma/cli@latest app deploy --project <id-or-name> --json --no-interactiv
 bunx @prisma/cli@latest app deploy --create-project <name> --yes
 ```
 
-Do not rely on `--yes` alone to choose Project scope. `--project`, `--create-project`, and `PRISMA_PROJECT_ID` are mutually exclusive.
+Do not rely on `--yes` alone to choose Project scope. `--project`, `--create-project`, and `PRISMA_PROJECT_ID` are
+mutually exclusive.
 
 ## Missing or Placeholder `DATABASE_URL`
 
@@ -235,7 +246,8 @@ Fix:
 - capture the deployment id and URL from deploy JSON, then inspect logs with `app logs --deployment <deployment-id>`
 - `app show`, `app list-deploys`, and `app logs` do not filter by branch; capture and use the deployment id
 - treat `app promote <deployment-id>` as a production action because it rebuilds with production env vars
-- do not expect `prisma.compute.ts` to select Project, Branch, production, or database scope; it only supplies app deploy defaults
+- do not expect `prisma.compute.ts` to select Project, Branch, production, or database scope; it only supplies app
+  deploy defaults
 
 ## Database Wiring or Schema Did Not Apply
 
@@ -250,13 +262,19 @@ Fix:
 - read [`app-deploy-cli.md`](app-deploy-cli.md) `Database and Env` for the database/env guardrails
 - create and assign database env vars explicitly for the intended branch/app scope
 - run migrations, seed, or schema push yourself after database setup; Compute never applies schema changes for you
-- for multi-app deploy-all with app-specific database isolation, create and assign those database env vars explicitly before deploy
+- for multi-app deploy-all with app-specific database isolation, create and assign those database env vars explicitly
+  before deploy
 
 ## Workspace plan limit reached
 
-When the installed CLI returns `PLAN_LIMIT_REACHED`, treat it as a workspace plan restriction rather than a Compute or database outage.
+When the installed CLI returns `PLAN_LIMIT_REACHED`, treat it as a workspace plan restriction rather than a Compute or
+database outage.
 
-For agent/CI handling, run the relevant database command with `--json` and branch on `error.code === "PLAN_LIMIT_REACHED"`. Read `error.meta.upgradeUrl`, `planName`, `workspaceId`, and `usageBlocked`; optional values may be `null`. This is a workspace plan restriction rather than a Compute/database outage. Use the canonical upgrade URL when returned or direct the user to Prisma Console. Do not retry as an outage or infer a plan limit from status codes or message text.
+For agent/CI handling, run the relevant database command with `--json` and branch on
+`error.code === "PLAN_LIMIT_REACHED"`. Read `error.meta.upgradeUrl`, `planName`, `workspaceId`, and `usageBlocked`;
+optional values may be `null`. This is a workspace plan restriction rather than a Compute/database outage. Use the
+canonical upgrade URL when returned or direct the user to Prisma Console. Do not retry as an outage or infer a plan
+limit from status codes or message text.
 
 ## Next.js Standalone Missing
 
@@ -280,16 +298,20 @@ Then reinstall/build if needed and deploy again.
 
 ## Next.js dependency missing after a successful build
 
-Symptoms in pnpm/Bun isolated workspaces can include a deployment that builds successfully but exits before useful runtime logs, often with `Cannot find module` for `styled-jsx` or another traced dependency.
+Symptoms in pnpm/Bun isolated workspaces can include a deployment that builds successfully but exits before useful
+runtime logs, often with `Cannot find module` for `styled-jsx` or another traced dependency.
 
-The current Compute SDK preserves in-artifact package-store symlinks and materializes only safe out-of-tree targets when staging Next standalone output. Do not manually flatten or rewrite `.next/standalone/node_modules` symlinks; that can break the isolated-store layout.
+The current Compute SDK preserves in-artifact package-store symlinks and materializes only safe out-of-tree targets when
+staging Next standalone output. Do not manually flatten or rewrite `.next/standalone/node_modules` symlinks; that can
+break the isolated-store layout.
 
 Fix:
 
 1. Upgrade `@prisma/compute-sdk` and `@prisma/cli` to current versions.
 2. Remove only the generated build artifact/cache appropriate to the project, then rebuild.
 3. Confirm `output: "standalone"`, redeploy, and inspect the new deployment logs.
-4. If it persists, report the package manager, workspace layout, first missing module, and SDK/CLI versions through `@prisma/cli feedback` without secrets.
+4. If it persists, report the package manager, workspace layout, first missing module, and SDK/CLI versions through
+   `@prisma/cli feedback` without secrets.
 
 ## Nitro Entry Missing
 
@@ -314,7 +336,9 @@ For TanStack Start specifically:
 - run `bun run build` and verify `.output/server/index.mjs` exists
 - do not replace the production server with `vite preview`
 
-Compute detection selects TanStack Start when it sees `@tanstack/react-start` or `@tanstack/solid-start`. If the Nitro entrypoint is missing after that, fix the TanStack/Nitro build output; do not assume Compute will silently use a Bun deployment.
+Compute detection selects TanStack Start when it sees `@tanstack/react-start` or `@tanstack/solid-start`. If the Nitro
+entrypoint is missing after that, fix the TanStack/Nitro build output; do not assume Compute will silently use a Bun
+deployment.
 
 ## Bun Entrypoint Missing
 
@@ -352,7 +376,8 @@ Fix:
 - read `process.env.PORT`
 - pass `--http-port <port>` when the app has a fixed port
 - use the generated `compute:deploy` script when it exists
-- remember the `@prisma/cli app deploy` default is HTTP `3000`; generated Hono/Elysia projects usually configure `8080` through `prisma.compute.ts` or flag-backed `--http-port 8080` scripts
+- remember the `@prisma/cli app deploy` default is HTTP `3000`; generated Hono/Elysia projects usually configure `8080`
+  through `prisma.compute.ts` or flag-backed `--http-port 8080` scripts
 - use the template defaults: Hono/Elysia `8080`, Next/TanStack/Nuxt `3000`, Astro `4321`
 
 ## Public URL Smoke Test Fails
@@ -374,7 +399,8 @@ bunx @prisma/cli@latest app logs --json
 Fix by following the first concrete failure:
 
 - connection timeout or 5xx: check logs, host binding, and port mapping
-- `504 Gateway Time-out` with an `openresty` body about 60s in: the ingress request timeout, not the app; see Request Timeout below
+- `504 Gateway Time-out` with an `openresty` body about 60s in: the ingress request timeout, not the app; see Request
+  Timeout below
 - unexpected status or body: verify the route path and app framework output
 - local URL tested by mistake: rerun against the public deployment URL, not `localhost` or `127.0.0.1`
 
@@ -388,7 +414,9 @@ Symptoms:
 
 Why this happens:
 
-Compute's boot watcher polls `/proc/net/tcp` and `/proc/net/tcp6` for configured ports entering `LISTEN`. That readiness signal tracks the port, not whether the app bound `127.0.0.1` or all interfaces. A loopback-only listener can therefore look ready while public ingress still cannot reach it.
+Compute's boot watcher polls `/proc/net/tcp` and `/proc/net/tcp6` for configured ports entering `LISTEN`. That readiness
+signal tracks the port, not whether the app bound `127.0.0.1` or all interfaces. A loopback-only listener can therefore
+look ready while public ingress still cannot reach it.
 
 Fix:
 
@@ -401,27 +429,36 @@ Fix:
 
 Symptoms:
 
-- the public URL returns `504 Gateway Time-out` with a short `openresty` body, about 60 seconds after the request was sent
+- the public URL returns `504 Gateway Time-out` with a short `openresty` body, about 60 seconds after the request was
+  sent
 - the app's own logs show the handler running, with no timeout error
 - the same route works whenever it starts responding in under 60 seconds
 - application timeouts set above 60 seconds never produce a response the caller sees
 
 Why this happens:
 
-Compute's ingress gives an app 60 seconds to start responding, then answers the client itself and cancels the request. The deadline covers the wait for the first bytes, not how long the response takes to finish, so a response that has already started streaming is not cut off. The app is not told directly; the cancellation surfaces as the request's abort signal. Once the request is cancelled, Compute stops counting it as in flight, so the instance can scale to zero while the handler is still working.
+Compute's ingress gives an app 60 seconds to start responding, then answers the client itself and cancels the request.
+The deadline covers the wait for the first bytes, not how long the response takes to finish, so a response that has
+already started streaming is not cut off. The app is not told directly; the cancellation surfaces as the request's abort
+signal. Once the request is cancelled, Compute stops counting it as in flight, so the instance can scale to zero while
+the handler is still working.
 
 Fix:
 
 - respond within 60 seconds; for webhooks, return `200` or `202` before doing the work
-- continue the work after the response with `waitUntil` or `KeepAwakeGuard` from `@prisma/compute`, which hold the instance awake on a best-effort basis
-- for work that must not be lost, persist a job and process it from a separate trigger in steps that each fit inside one request
-- keep in-request timeouts (`AbortSignal.timeout`, fetch timeouts) under 60 seconds so the app's own error handling runs first
+- continue the work after the response with `waitUntil` or `KeepAwakeGuard` from `@prisma/compute`, which hold the
+  instance awake on a best-effort basis
+- for work that must not be lost, persist a job and process it from a separate trigger in steps that each fit inside one
+  request
+- keep in-request timeouts (`AbortSignal.timeout`, fetch timeouts) under 60 seconds so the app's own error handling runs
+  first
 - check `req.signal` when a handler should stop work it no longer needs to finish
 - docs: https://www.prisma.io/docs/compute/request-timeout
 
 ## Env Changes Did Not Apply
 
-Generated `compute:deploy` scripts redeploy using the generated flags and/or `prisma.compute.ts`; they do not run migrations or seed data.
+Generated `compute:deploy` scripts redeploy using the generated flags and/or `prisma.compute.ts`; they do not run
+migrations or seed data.
 
 After env changes:
 
@@ -462,16 +499,19 @@ bunx @prisma/cli@latest build logs <build-id> --follow
 bunx @prisma/cli@latest build logs <build-id> --json
 ```
 
-Use `build logs` for build output keyed by a Build id from a GitHub check run, Console build page, or Management API build record. Use `app logs` for runtime logs keyed by the current app deployment or a deployment id.
+Use `build logs` for build output keyed by a Build id from a GitHub check run, Console build page, or Management API
+build record. Use `app logs` for runtime logs keyed by the current app deployment or a deployment id.
 
 Summarize relevant errors. Do not paste secrets.
 
 ## Report Unresolved CLI Issues
 
-When a CLI failure survives the checks above, or a command crashes with `UNEXPECTED_ERROR`, report it to the Prisma team:
+When a CLI failure survives the checks above, or a command crashes with `UNEXPECTED_ERROR`, report it to the Prisma
+team:
 
 ```bash
 bunx @prisma/cli@latest feedback "app deploy crashed: <first error line>"
 ```
 
-Prefer the pre-filled command from a `--json` crash envelope's `nextActions` verbatim. Anonymous; never put secrets, connection URLs, or tokens in the message.
+Prefer the pre-filled command from a `--json` crash envelope's `nextActions` verbatim. Anonymous; never put secrets,
+connection URLs, or tokens in the message.

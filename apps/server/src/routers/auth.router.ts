@@ -7,7 +7,9 @@ import {
 } from "../services/auth.service.js";
 
 export const authRouter = router({
-  me: protectedProcedure.query(async ({ ctx }) => getLoggedInUser(ctx.user.id)),
+  me: protectedProcedure.query(async ({ ctx }) =>
+    getLoggedInUser(ctx.user.id, ctx.user.organizationId),
+  ),
 
   login: publicProcedure
     .input(loginSchema)

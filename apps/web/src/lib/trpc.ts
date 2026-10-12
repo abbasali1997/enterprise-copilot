@@ -18,3 +18,5 @@ export const trpcClient = createTRPCClient<AppRouter>({
 });
 
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
+
+export type LoginResponse = Awaited<ReturnType<typeof trpcClient.auth.login.mutate>>;

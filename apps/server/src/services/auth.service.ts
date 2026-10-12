@@ -28,7 +28,10 @@ import { registerResponseError } from "../error-handlers/auth.errorHandler.js";
 import { TRPCError } from "@trpc/server";
 import { normalizeEmail } from "../utils/helpers.js";
 
-export const getLoggedInUser = async (userId: string) => {
+export const getLoggedInUser = async (
+  userId: string,
+  organizationId: string,
+) => {
   const user = await findUserById(userId);
 
   if (!user || user.status !== "ACTIVE") {
@@ -38,7 +41,35 @@ export const getLoggedInUser = async (userId: string) => {
     });
   }
 
-  return { id: user.id, email: user.email, name: user.name };
+  const memberships = await findOrganizationMembers({
+    where: {
+      userId,
+      organizationId,
+      status: "ACTIVE",
+      organization: { status: "ACTIVE" },
+    },
+    include: { organization: true },
+    take: 1,
+  });
+  const membership = memberships[0];
+  if (!membership) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your organization membership is unavailable or inactive",
+    });
+  }
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    organization: {
+      id: membership.organizationId,
+      name: membership.organization.name,
+      slug: membership.organization.slug,
+      logoUrl: membership.organization.logoUrl,
+      role: membership.role,
+    },
+  };
 };
 
 export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
@@ -86,8 +117,9 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   const toWorkspace = (membership: (typeof memberships)[number]) => ({
     id: membership.organizationId,
     role: membership.role,
-    name: membership.organization.name as any,
-    slug: membership.organization.slug as any,
+    name: membership.organization.name,
+    slug: membership.organization.slug,
+    logoUrl: membership.organization.logoUrl,
   });
 
   const membership = memberships[0];

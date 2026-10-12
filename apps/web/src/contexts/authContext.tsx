@@ -1,8 +1,9 @@
-import { createContext, useCallback, useEffect, type ReactNode } from "react";
-import { useTRPC } from "@/lib/trpc.ts";
+import { TRPCClientError } from "@trpc/client";
+import { createContext, useCallback, useState, type ReactNode } from "react";
+import { trpcClient, useTRPC } from "@/lib/trpc.ts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-type User = { email: string; id: string; name: string };
+type User = Awaited<ReturnType<typeof trpcClient.auth.me.query>>;
 
 type AuthContextValueType = {
   user: User | null;
@@ -17,38 +18,64 @@ export const AuthContext = createContext<AuthContextValueType | undefined>(
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const hasToken = !!localStorage.getItem("token");
+  const [session, setSession] = useState(() => ({
+    token: localStorage.getItem("token"),
+    version: 0,
+  }));
+  const baseQueryKey = trpc.auth.me.queryKey();
+  const queryKey = [...baseQueryKey, { session: session.version }];
 
-  const { data: me, error } = useQuery({
-    ...trpc.auth.me.queryOptions(),
-    enabled: hasToken,
+  const { data: me, error } = useQuery<User>({
+    queryKey,
+    enabled: !!session.token,
     retry: false,
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      try {
+        return await trpcClient.auth.me.query(undefined, { signal });
+      } catch (error) {
+        if (signal.aborted) throw error;
+        console.error("Could not get authenticated user:", error);
+        if (
+          error instanceof Error &&
+          "data" in error &&
+          (error.data as { code?: string } | undefined)?.code ===
+            "UNAUTHORIZED" &&
+          localStorage.getItem("token") === session.token
+        ) {
+          localStorage.removeItem("token");
+          setSession((current) =>
+            current.version === session.version
+              ? { token: null, version: current.version + 1 }
+              : current,
+          );
+        }
+        throw error;
+      }
+    },
   });
-
-  const unauthorized = error?.data?.code === "UNAUTHORIZED";
-  const user = hasToken && !unauthorized ? (me ?? null) : null;
 
   const setUser = useCallback(
     (nextUser: User | null) => {
-      if (!nextUser) {
-        localStorage.removeItem("token");
-      }
-      const queryKey = trpc.auth.me.queryKey();
-      // Prevent an older in-flight response from undoing login or logout.
-      void queryClient.cancelQueries({ queryKey });
-      queryClient.setQueryData<User | null>(queryKey, nextUser);
+      if (!nextUser) localStorage.removeItem("token");
+      const nextSession = {
+        token: nextUser ? localStorage.getItem("token") : null,
+        version: session.version + 1,
+      };
+      const baseKey = trpc.auth.me.queryKey();
+      void queryClient.cancelQueries({ queryKey: baseKey });
+      // Seed a new session's cache; old requests only affect their previous key.
+      queryClient.setQueryData<User | null>(
+        [...baseKey, { session: nextSession.version }],
+        nextUser,
+      );
+      setSession(nextSession);
     },
-    [queryClient, trpc],
+    [queryClient, trpc, session.version],
   );
 
-  useEffect(() => {
-    if (!error) return;
-    console.error("Could not get authenticated user:", error);
-
-    if (error.data?.code === "UNAUTHORIZED") {
-      localStorage.removeItem("token");
-    }
-  }, [error]);
+  const unauthorized = error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED";
+  const user = session.token && !unauthorized ? (me ?? null) : null;
 
   return (
     <AuthContext.Provider value={{ user, setUser }}>

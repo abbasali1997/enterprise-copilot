@@ -13,6 +13,7 @@ export type AuthResponse =
         name: string;
         slug: string;
         role: "OWNER" | "ADMIN" | "MEMBER";
+        logoUrl: string | null;
       };
       accessToken: string;
       expiresIn: number;
@@ -25,6 +26,7 @@ export type AuthResponse =
         name: string;
         slug: string;
         role: "OWNER" | "ADMIN" | "MEMBER";
+        logoUrl: string | null;
       }>;
       selectionToken: string;
       expiresIn: number;

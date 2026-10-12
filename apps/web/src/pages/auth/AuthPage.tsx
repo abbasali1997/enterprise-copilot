@@ -1,151 +1,100 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/authContext.tsx";
 import { useNavigate } from "react-router-dom";
-import { useTRPC } from "@/lib/trpc.ts";
+import { useTRPC, type LoginResponse } from "@/lib/trpc.ts";
 import { useMutation } from "@tanstack/react-query";
+import Login from "@/components/auth/Login.tsx";
+import WorkplaceSelection from "@/components/auth/WorkplaceSelection.tsx";
+
+type WorkspaceSelection = Extract<
+  LoginResponse,
+  { status: "workspace_selection_required" }
+>;
+type AuthenticatedResponse = Extract<
+  LoginResponse,
+  { status: "authenticated" }
+>;
 
 const AuthPage = () => {
   const trpc = useTRPC();
-
   const value = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
-
+  const [workspaceSelection, setWorkspaceSelection] =
+    useState<WorkspaceSelection | null>(null);
   const navigate = useNavigate();
+
+  const completeAuthentication = (data: AuthenticatedResponse) => {
+    setIsRedirecting(true);
+    localStorage.setItem("token", data.accessToken);
+    value?.setUser({ ...data.user, organization: data.workspace });
+    setTimeout(() => navigate("/"), 2000);
+  };
+
+  const selectOrganization = useMutation(
+    trpc.organization.selectOrganization.mutationOptions({
+      onSuccess: completeAuthentication,
+    }),
+  );
 
   const login = useMutation(
     trpc.auth.login.mutationOptions({
       onSuccess: (data) => {
-        setIsRedirecting(true);
-        localStorage.setItem("token", data.token);
-        value?.setUser(data.user);
-
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
+        if (data.status === "workspace_selection_required") {
+          localStorage.removeItem("token");
+          value?.setUser(null);
+          setPassword("");
+          selectOrganization.reset();
+          setWorkspaceSelection(data);
+          return;
+        }
+        completeAuthentication(data);
       },
-      onError: (error) => {
-        console.error(error);
-      },
+      onError: (error) => console.error(error),
     }),
   );
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (login.isPending || isRedirecting) return;
+    login.mutate({ email, password });
+  };
 
-    login.mutate({
-      email,
-      password,
+  const handleWorkspaceProceed = (organizationId: string) => {
+    if (!workspaceSelection || selectOrganization.isPending || isRedirecting)
+      return;
+    selectOrganization.mutate({
+      organizationId,
+      selectionToken: workspaceSelection.selectionToken,
     });
   };
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Sign In To Your Organization
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Enter your email and password to continue.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@company.com"
-              autoComplete="email"
-              required
-              className=" w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-
-              <button
-                type="button"
-                className="text-xs font-medium text-gray-500 hover:text-gray-900"
-              >
-                Forgot password?
-              </button>
-            </div>
-
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-              className="
-                w-full
-                rounded-lg
-                border
-                border-gray-300
-                bg-white
-                px-3
-                py-2.5
-                text-sm
-                text-gray-900
-                outline-none
-                transition
-                placeholder:text-gray-400
-                focus:border-gray-900
-                focus:ring-2
-                focus:ring-gray-900/10
-              "
-            />
-          </div>
-
-          <button
-            disabled={login.isPending || isRedirecting}
-            type="submit"
-            className="
-              w-full
-              rounded-lg
-              bg-indigo-500
-              px-4
-              py-2.5
-              text-sm
-              font-medium
-              text-white
-              transition
-              hover:bg-gray-900
-              focus:outline-none
-              focus:ring-2
-              focus:ring-gray-900
-              focus:ring-offset-2
-              disabled:bg-red-900
-            "
-            style={{ cursor: "pointer" }}
-          >
-            {isRedirecting ? "Redirecting" : login.isPending ? "Loading..." : "Sign in"}
-          </button>
-        </form>
-      </div>
+      {workspaceSelection ? (
+        <WorkplaceSelection
+          workspaceList={workspaceSelection.workspaces}
+          onBack={() => {
+            setWorkspaceSelection(null);
+            selectOrganization.reset();
+          }}
+          onProceed={handleWorkspaceProceed}
+          isPending={selectOrganization.isPending}
+          isRedirecting={isRedirecting}
+          error={selectOrganization.error?.message}
+        />
+      ) : (
+        <Login
+          handleSubmit={handleSubmit}
+          email={email}
+          password={password}
+          setEmail={setEmail}
+          setPassword={setPassword}
+          isRedirecting={isRedirecting}
+          isPending={login.isPending}
+        />
+      )}
     </div>
   );
 };
