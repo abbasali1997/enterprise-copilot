@@ -7,27 +7,31 @@ import {
   faSearch,
   faUserGear,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
+import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 
 type ChatNavbarProps = {
   onSearch?: (query: string) => void;
-  onManage?: (organizationId: string) => void;
   onChangeWorkspace?: () => void;
 };
 
-function ChatNavbar({
-  onSearch,
-  onManage,
-  onChangeWorkspace,
-}: ChatNavbarProps) {
+function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
   const auth = useContext(AuthContext);
-
-  console.log(auth);
-
   const workspace = auth?.user?.organization;
   const [search, setSearch] = useState("");
   const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const logoUrl = workspace?.logoUrl;
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const canManage = auth?.user?.organization
+    ? can(auth?.user?.organization.role, PERMISSIONS.ORGANIZATION_MANAGE)
+    : false;
+
+  const onManage = (organizationId: string) => {
+    navigate(`/workspace/${organizationId}`);
+    return;
+  };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -120,28 +124,32 @@ function ChatNavbar({
                   aria-label="Workspace options"
                   className="absolute right-0 top-full z-50 mt-3 w-30 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
                 >
+                  {canManage ? (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onManage(workspace.id);
+                        }}
+                        className="flex justify-around w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
+                      >
+                        <FontAwesomeIcon
+                          icon={faUserGear}
+                          className="w-5 h-5 mr-4"
+                        />
+                        <span>Manage</span>
+                      </button>
+                    </li>
+                  ) : null}
+
                   <li>
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        onManage?.(workspace.id);
-                      }}
-                      className="flex justify-around w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
-                    >
-                      <FontAwesomeIcon
-                        icon={faUserGear}
-                        className="w-5 h-5 mr-4"
-                      />
-                      <span>Manage</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onChangeWorkspace?.();
+                        if (onChangeWorkspace) onChangeWorkspace();
+                        else navigate("/workspaces/change");
                       }}
                       className="flex justify-around w-full rounded-lg px-3 py-2 text-right text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
                     >

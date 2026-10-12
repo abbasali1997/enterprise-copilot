@@ -22,6 +22,7 @@
     "@types/jsonwebtoken": "^9.0.10"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./permissions": "./src/permissions/index.ts"
   }
 }

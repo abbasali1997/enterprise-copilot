@@ -12,6 +12,8 @@ type WorkplaceSelectionProps = {
   isPending: boolean;
   isRedirecting: boolean;
   error?: string;
+  initialWorkspaceId?: string;
+  backLabel?: string;
 };
 
 function WorkplaceSelection({
@@ -21,8 +23,12 @@ function WorkplaceSelection({
   isPending,
   isRedirecting,
   error,
+  initialWorkspaceId,
+  backLabel = "Back to sign in",
 }: WorkplaceSelectionProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialWorkspaceId ?? null,
+  );
   const busy = isPending || isRedirecting;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -85,7 +91,7 @@ function WorkplaceSelection({
             disabled={busy}
             className="text-sm font-medium text-indigo-600 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Back to sign in
+            {backLabel}
           </button>
           <button
             type="submit"

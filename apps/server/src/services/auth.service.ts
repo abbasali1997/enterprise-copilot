@@ -73,6 +73,7 @@ export const getLoggedInUser = async (
 };
 
 export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
+  console.log(input);
   const normalizedEmail = normalizeEmail(input.email);
 
   const user = await findUserByEmail(normalizedEmail);

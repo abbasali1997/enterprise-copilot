@@ -7,6 +7,7 @@ type User = Awaited<ReturnType<typeof trpcClient.auth.me.query>>;
 
 type AuthContextValueType = {
   user: User | null;
+  isLoading: boolean;
   setUser: (user: User | null) => void;
 };
 
@@ -25,7 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const baseQueryKey = trpc.auth.me.queryKey();
   const queryKey = [...baseQueryKey, { session: session.version }];
 
-  const { data: me, error } = useQuery<User>({
+  const {
+    data: me,
+    error,
+    isPending,
+  } = useQuery<User>({
     queryKey,
     enabled: !!session.token,
     retry: false,
@@ -74,11 +79,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [queryClient, trpc, session.version],
   );
 
-  const unauthorized = error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED";
+  const unauthorized =
+    error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED";
   const user = session.token && !unauthorized ? (me ?? null) : null;
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider
+      value={{ user, setUser, isLoading: !!session.token && isPending }}
+    >
       {children}
     </AuthContext.Provider>
   );

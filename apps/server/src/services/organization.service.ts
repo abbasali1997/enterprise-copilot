@@ -84,6 +84,7 @@ export const selectOrganization = async (
       message: "Sign in or provide a workspace selection token",
     });
   }
+
   const user = await findUserById(userId);
   if (!user || user.status !== "ACTIVE") {
     throw new TRPCError({
@@ -518,4 +519,22 @@ const slugify = (name: string, count = 0) => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .concat(count > 0 ? `_${count}` : "");
+};
+
+export const listUserOrganizations = async (userId: string) => {
+  const user = await findUserById(userId);
+  if (!user || user.status !== "ACTIVE")
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  const memberships = await findOrganizationMembers({
+    where: { userId, status: "ACTIVE", organization: { status: "ACTIVE" } },
+    include: { organization: true },
+    orderBy: { organization: { name: "asc" } },
+  });
+  return memberships.map(({ organization, role }) => ({
+    id: organization.id,
+    name: organization.name,
+    slug: organization.slug,
+    logoUrl: organization.logoUrl,
+    role,
+  }));
 };

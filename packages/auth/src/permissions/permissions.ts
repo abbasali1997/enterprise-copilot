@@ -1,17 +1,19 @@
-export enum PERMISSIONS {
-  ORGANIZATION_MANAGE = "organization:manage",
+export const PERMISSIONS = {
+  ORGANIZATION_MANAGE: "organization:manage",
 
-  MEMBER_INVITE = "member:invite",
-  MEMBER_REMOVE = "member:remove",
+  MEMBER_INVITE: "member:invite",
+  MEMBER_REMOVE: "member:remove",
 
-  DOCUMENT_READ = "document:read",
-  DOCUMENT_UPLOAD = "document:upload",
-  DOCUMENT_DELETE = "document:delete",
+  DOCUMENT_READ: "document:read",
+  DOCUMENT_UPLOAD: "document:upload",
+  DOCUMENT_DELETE: "document:delete",
 
-  ASSISTANT_CREATE = "assistant:create",
+  ASSISTANT_CREATE: "assistant:create",
 
-  CHAT_USE = "chat:use",
-}
+  CHAT_USE: "chat:use",
+} as const;
+
+export type PERMISSIONS = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const rolePermissions = {
   OWNER: [

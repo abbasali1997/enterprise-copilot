@@ -55,7 +55,7 @@ const AppSidebar = () => {
       id="side-bar"
       className="w-full h-full flex shrink-0 flex-col border-r bg-white"
     >
-      <div className="p-4">
+      <div className="p-4 cursor-pointer" onClick={() => navigate("/")}>
         <img
           className="w-52"
           src="/Enterprise-Copilot-Logo.png"
@@ -64,11 +64,8 @@ const AppSidebar = () => {
       </div>
 
       <div className="p-4">
-        <button
-          className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800"
-          style={{ cursor: "pointer" }}
-        >
-          + New Chat
+        <button className="cursor-pointer w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800">
+          New Chat
         </button>
       </div>
 

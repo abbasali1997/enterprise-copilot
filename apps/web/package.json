@@ -24,7 +24,8 @@
     "react-router-dom": "^7.18.4",
     "superjson": "^2.2.6",
     "tailwindcss": "^4.3.3",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "@enterprise/auth": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

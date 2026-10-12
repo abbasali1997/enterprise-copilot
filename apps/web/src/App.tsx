@@ -1,8 +1,48 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ChangeWorkspacePage from "@/pages/workspace/ChangeWorkspacePage.tsx";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import HealthPage from "@/pages/health/HealthPage.tsx";
-import { AuthProvider } from "@/contexts/authContext.tsx";
+import { AuthContext, AuthProvider } from "@/contexts/authContext.tsx";
 import HomePage from "@/pages/home/HomePage.tsx";
 import AuthPage from "@/pages/auth/AuthPage.tsx";
+import { useContext } from "react";
+import WorkspacePage from "@/pages/workspace/WorkspacePage.tsx";
+import { can, PERMISSIONS } from "@enterprise/auth/permissions";
+
+const ProtectedAdminRoute = () => {
+  const value = useContext(AuthContext);
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
+  if (value?.isLoading) {
+    return (
+      <div
+        role="status"
+        className="flex min-h-screen items-center justify-center text-gray-500"
+      >
+        Checking your session...
+      </div>
+    );
+  }
+
+  if (!value || !value.user)
+    return <Navigate to="/login" state={{ from: location }} replace />;
+
+  const isAllowed = can(
+    value.user.organization.role,
+    PERMISSIONS.ORGANIZATION_MANAGE,
+  );
+
+  if (!isAllowed) return <Navigate to={from} replace />;
+
+  return <Outlet />;
+};
 
 function App() {
   return (
@@ -13,9 +53,16 @@ function App() {
             <Route path="/health" Component={HealthPage} />
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<AuthPage />} />
-            {/*<Route element={<ProtectedAdminRoute />}>*/}
-            {/*  <Route path="/admin" element={<Admin />} />*/}
-            {/*</Route>*/}
+            <Route
+              path="/workspaces/change"
+              element={<ChangeWorkspacePage />}
+            />
+            <Route element={<ProtectedAdminRoute />}>
+              <Route
+                path="/workspace/:organizationId"
+                element={<WorkspacePage />}
+              />
+            </Route>
           </Routes>
         </div>
       </BrowserRouter>
