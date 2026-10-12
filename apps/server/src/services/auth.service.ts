@@ -1,5 +1,16 @@
-import type { LoginInput, RegisterInput } from "../types/auth.type.js";
-import { generateJWT, hashPassword, verifyPassword } from "@enterprise/auth";
+import type {
+  AuthResponse,
+  LoginInput,
+  RegisterInput,
+} from "../types/auth.type.js";
+import {
+  generateJWT,
+  generateWorkspaceSelectionToken,
+  hashPassword,
+  verifyPassword,
+  ACCESS_TOKEN_TTL_SECONDS,
+  WORKSPACE_SELECTION_TTL_SECONDS,
+} from "@enterprise/auth";
 import { prisma } from "@enterprise/db";
 import {
   createUser,
@@ -30,7 +41,7 @@ export const getLoggedInUser = async (userId: string) => {
   return { id: user.id, email: user.email, name: user.name };
 };
 
-export const loginUser = async (input: LoginInput) => {
+export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   const normalizedEmail = normalizeEmail(input.email);
 
   const user = await findUserByEmail(normalizedEmail);
@@ -56,11 +67,12 @@ export const loginUser = async (input: LoginInput) => {
   const memberships = await findOrganizationMembers({
     where: {
       userId: user.id,
-      organizationId: input.organizationId,
       status: "ACTIVE",
       organization: { status: "ACTIVE" },
     },
-    take: 2,
+    include: {
+      organization: true,
+    },
   });
 
   if (memberships.length === 0) {
@@ -70,33 +82,52 @@ export const loginUser = async (input: LoginInput) => {
     });
   }
 
-  if (!input.organizationId && memberships.length > 1) {
+  const safeUser = { id: user.id, email: user.email, name: user.name };
+  const toWorkspace = (membership: (typeof memberships)[number]) => ({
+    id: membership.organizationId,
+    role: membership.role,
+    name: membership.organization.name as any,
+    slug: membership.organization.slug as any,
+  });
+
+  const membership = memberships[0];
+  if (!membership) {
     throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "Provide organizationId to select an organization",
+      code: "FORBIDDEN",
+      message: "No active membership in an active organization",
     });
   }
 
-  const membership = memberships[0]!;
-  const token = generateJWT({
-    userId: user.id,
-    organizationId: membership.organizationId,
-    role: membership.role,
-  });
+  const response: AuthResponse =
+    memberships.length === 1
+      ? {
+          status: "authenticated",
+          user: safeUser,
+          workspace: toWorkspace(membership),
+          accessToken: generateJWT({
+            userId: user.id,
+            organizationId: membership.organizationId,
+            role: membership.role,
+          }),
+          expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+        }
+      : {
+          status: "workspace_selection_required",
+          user: safeUser,
+          workspaces: memberships.map(toWorkspace),
+          selectionToken: generateWorkspaceSelectionToken(user.id),
+          expiresIn: WORKSPACE_SELECTION_TTL_SECONDS,
+        };
 
   await updateUser({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
   });
 
-  logger.success(`User "${user.name}" logged in.`);
-
-  return {
-    token,
-    user: { id: user.id, email: user.email, name: user.name },
-    organizationId: membership.organizationId,
-    role: membership.role,
-  };
+  logger.success(
+    `User "${user.name}" authenticated${response.status === "workspace_selection_required" ? "; workspace selection required" : ""}.`,
+  );
+  return response;
 };
 
 export const registerUser = async (input: RegisterInput) => {

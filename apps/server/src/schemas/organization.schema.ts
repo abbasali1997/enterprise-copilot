@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const selectOrganizationSchema = z.object({
+  organizationId: z.string().trim().uuid(),
+  selectionToken: z.string().min(1),
+});
+
 export const inviteMemberSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),

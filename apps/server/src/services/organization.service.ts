@@ -1,7 +1,15 @@
+import type { AuthResponse } from "../types/auth.type.js";
 import { type Prisma, prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
 
-import { can, generateJWT, hashPassword, PERMISSIONS } from "@enterprise/auth";
+import {
+  can,
+  generateJWT,
+  hashPassword,
+  PERMISSIONS,
+  verifyWorkspaceSelectionToken,
+  ACCESS_TOKEN_TTL_SECONDS,
+} from "@enterprise/auth";
 
 import { createHash, randomBytes } from "node:crypto";
 
@@ -9,6 +17,7 @@ import type {
   AcceptInviteInput,
   InviteResponseInput,
   RejectInviteInput,
+  SelectOrganizationInput,
 } from "../types/organization.type.js";
 
 import { invitationResponseError } from "../error-handlers/organization.errorHandler.js";
@@ -17,6 +26,7 @@ import { normalizeEmail } from "../utils/helpers.js";
 
 import {
   countOrganizationsByName,
+  findOrganizationMembers,
   createOrganizationRecord,
   createOrganizationMember,
   findOrganizationMember,
@@ -33,6 +43,90 @@ import {
   findUserByEmail,
   findUserById,
 } from "../repositories/user.repository.js";
+
+export const selectOrganization = async (
+  input: SelectOrganizationInput,
+  signedInUserId?: string,
+): Promise<Extract<AuthResponse, { status: "authenticated" }>> => {
+  let userId = signedInUserId;
+
+  if (input.selectionToken) {
+    let selection;
+    try {
+      selection = verifyWorkspaceSelectionToken(input.selectionToken);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        ["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(
+          error.name,
+        )
+      ) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid or expired workspace selection token",
+          cause: error,
+        });
+      }
+      throw error;
+    }
+    if (userId && userId !== selection.sub) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Selection token belongs to another user",
+      });
+    }
+    userId = selection.sub;
+  }
+
+  if (!userId) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Sign in or provide a workspace selection token",
+    });
+  }
+  const user = await findUserById(userId);
+  if (!user || user.status !== "ACTIVE") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is unavailable or inactive",
+    });
+  }
+
+  const memberships = await findOrganizationMembers({
+    where: {
+      userId: user.id,
+      organizationId: input.organizationId,
+      status: "ACTIVE",
+      organization: { status: "ACTIVE" },
+    },
+    include: { organization: true },
+    take: 1,
+  });
+  const membership = memberships[0];
+  if (!membership) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "No active membership in this organization",
+    });
+  }
+
+  return {
+    status: "authenticated",
+    user: { id: user.id, name: user.name, email: user.email },
+    workspace: {
+      id: membership.organizationId,
+      name: membership.organization.name,
+      slug: membership.organization.slug,
+      role: membership.role,
+    },
+    accessToken: generateJWT({
+      userId: user.id,
+      organizationId: membership.organizationId,
+      role: membership.role,
+    }),
+    expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+  };
+};
 
 export const createOrganization = async (
   organizationName: string,
