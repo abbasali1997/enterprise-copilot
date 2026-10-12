@@ -80,7 +80,7 @@ const AppSidebar = () => {
         <SidebarItem icon={faBrain}>Knowledge</SidebarItem>
       </nav>
 
-      <div className="mt-auto shrink-0 border-t p-3">
+      <div className="mt-auto shrink-0 border-t border-zinc-400 p-3">
         {auth?.user ? (
           <details className="relative">
             <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg p-2 transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-gray-900 [&::-webkit-details-marker]:hidden">

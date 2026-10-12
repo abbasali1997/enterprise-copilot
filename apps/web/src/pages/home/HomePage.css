@@ -1,5 +1,5 @@
 #chat-area {
-    min-height: 100vh;
+    min-height: 0;
 
     background: radial-gradient(
             circle at 10% 5%,
