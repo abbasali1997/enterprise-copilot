@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const getOrganizationByIdSchema = z.object({
+  organizationId: z.string().trim().uuid(),
+});
+
 export const changeOrganizationSchema = z.object({
   organizationId: z.string().trim().uuid(),
 });

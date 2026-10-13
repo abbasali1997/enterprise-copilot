@@ -3,12 +3,13 @@ import { type Prisma, prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
 
 import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  ORGANIZATION_ROLES,
   can,
   generateJWT,
   hashPassword,
   PERMISSIONS,
   verifyWorkspaceSelectionToken,
-  ACCESS_TOKEN_TTL_SECONDS,
 } from "@enterprise/auth";
 
 import { createHash, randomBytes } from "node:crypto";
@@ -25,17 +26,18 @@ import { invitationResponseError } from "../error-handlers/organization.errorHan
 import { normalizeEmail } from "../utils/helpers.js";
 
 import {
-  countOrganizationsByName,
-  findOrganizationMembers,
-  createOrganizationRecord,
-  createOrganizationMember,
-  findOrganizationMember,
-  createOrganizationInvitation,
-  findOrganizationInvitationByTokenHash,
-  findPendingOrganizationInvitation,
   claimOrganizationInvitation,
-  setInvitationAcceptedByUser,
+  countOrganizationsByName,
+  createOrganizationInvitation,
+  createOrganizationMember,
+  createOrganizationRecord,
+  findOrganization,
+  findOrganizationInvitationByTokenHash,
+  findOrganizationMember,
+  findOrganizationMembers,
+  findPendingOrganizationInvitation,
   markInvitationExpired,
+  setInvitationAcceptedByUser,
 } from "../repositories/organization.repository.js";
 
 import {
@@ -43,6 +45,89 @@ import {
   findUserByEmail,
   findUserById,
 } from "../repositories/user.repository.js";
+
+export const findOne = async (
+  id: string,
+  userId: string,
+  activeOrganizationId: string,
+) => {
+  const user = await findUserById(userId);
+  if (!user || user.status !== "ACTIVE") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is unavailable or inactive",
+    });
+  }
+  if (id !== activeOrganizationId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Switch to this workspace before managing it",
+    });
+  }
+
+  const allowedRoles = ORGANIZATION_ROLES.filter((role) =>
+    can(role, PERMISSIONS.ORGANIZATION_VIEW),
+  );
+
+  const authorizedMember = {
+    userId,
+    status: "ACTIVE",
+    role: { in: allowedRoles },
+    user: { status: "ACTIVE" },
+  } satisfies Prisma.OrganizationMemberWhereInput;
+
+  const organization = await findOrganization({
+    where: {
+      id,
+      status: "ACTIVE",
+      members: {
+        some: authorizedMember,
+      },
+    },
+    include: {
+      members: {
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
+        orderBy: {
+          role: "asc",
+        },
+      },
+    },
+  });
+
+  if (!organization) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "Organization is unavailable or you do not have permission to manage it",
+    });
+  }
+
+  return organization;
+};
+
+export const listUserOrganizations = async (userId: string) => {
+  const user = await findUserById(userId);
+  if (!user || user.status !== "ACTIVE")
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+
+  const memberships = await findOrganizationMembers({
+    where: { userId, status: "ACTIVE", organization: { status: "ACTIVE" } },
+    include: { organization: true },
+    orderBy: { organization: { name: "asc" } },
+  });
+
+  return memberships.map(({ organization, role }) => ({
+    id: organization.id,
+    name: organization.name,
+    slug: organization.slug,
+    logoUrl: organization.logoUrl,
+    role,
+  }));
+};
 
 export const selectOrganization = async (
   input: SelectOrganizationInput,
@@ -519,22 +604,4 @@ const slugify = (name: string, count = 0) => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .concat(count > 0 ? `_${count}` : "");
-};
-
-export const listUserOrganizations = async (userId: string) => {
-  const user = await findUserById(userId);
-  if (!user || user.status !== "ACTIVE")
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  const memberships = await findOrganizationMembers({
-    where: { userId, status: "ACTIVE", organization: { status: "ACTIVE" } },
-    include: { organization: true },
-    orderBy: { organization: { name: "asc" } },
-  });
-  return memberships.map(({ organization, role }) => ({
-    id: organization.id,
-    name: organization.name,
-    slug: organization.slug,
-    logoUrl: organization.logoUrl,
-    role,
-  }));
 };

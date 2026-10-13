@@ -24,8 +24,8 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const canManage = auth?.user?.organization
-    ? can(auth?.user?.organization.role, PERMISSIONS.ORGANIZATION_MANAGE)
+  const canView = auth?.user?.organization
+    ? can(auth?.user?.organization.role, PERMISSIONS.ORGANIZATION_VIEW)
     : false;
 
   const onManage = (organizationId: string) => {
@@ -124,7 +124,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                   aria-label="Workspace options"
                   className="absolute right-0 top-full z-50 mt-3 w-30 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
                 >
-                  {canManage ? (
+                  {canView ? (
                     <li>
                       <button
                         type="button"

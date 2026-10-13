@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     token: localStorage.getItem("token"),
     version: 0,
   }));
+
   const baseQueryKey = trpc.auth.me.queryKey();
   const queryKey = [...baseQueryKey, { session: session.version }];
 

@@ -1,6 +1,7 @@
 import { protectedProcedure, publicProcedure, router } from "../trpc.js";
 import {
   changeOrganizationSchema,
+  getOrganizationByIdSchema,
   inviteMemberSchema,
   respondToInviteSchema,
   selectOrganizationSchema,
@@ -10,12 +11,20 @@ import {
   respondToInvitation,
   selectOrganization,
   listUserOrganizations,
+  findOne,
 } from "../services/organization.service.js";
 
 export const organizationRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
     listUserOrganizations(ctx.user.id),
   ),
+
+  getById: protectedProcedure
+    .input(getOrganizationByIdSchema)
+    .query(({ ctx, input }) =>
+      findOne(input.organizationId, ctx.user.id, ctx.user.organizationId),
+    ),
+
   changeOrganization: protectedProcedure
     .input(changeOrganizationSchema)
     .mutation(({ ctx, input }) => {

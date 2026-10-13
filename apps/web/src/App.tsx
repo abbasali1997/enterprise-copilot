@@ -57,7 +57,7 @@ const ProtectedAdminRoute = () => {
 
   const isAllowed = can(
     value.user.organization.role,
-    PERMISSIONS.ORGANIZATION_MANAGE,
+    PERMISSIONS.ORGANIZATION_VIEW,
   );
 
   if (!isAllowed) return <Navigate to={from} replace />;

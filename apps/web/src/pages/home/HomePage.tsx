@@ -9,9 +9,9 @@ function HomePage() {
       <div className="col-span-2 min-h-0 min-w-0">
         <AppSidebar />
       </div>
-      <main id="chat-area" className="col-span-7 w-full h-full">
+      <main id="bg-area" className="col-span-7 w-full h-full">
         <div
-          id="chat-container"
+          id="bg-container"
           className="w-full h-full flex min-h-0 min-w-0 flex-col"
         >
           <ChatNavbar />

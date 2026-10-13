@@ -2,6 +2,13 @@ import { type Prisma, prisma } from "@enterprise/db";
 
 type DbClient = Prisma.TransactionClient | typeof prisma;
 
+export const findOrganization = <T extends Prisma.OrganizationFindFirstArgs>(
+  args: Prisma.SelectSubset<T, Prisma.OrganizationFindFirstArgs>,
+  db: DbClient = prisma,
+) => {
+  return db.organization.findFirst<T>(args);
+};
+
 export const countOrganizationsByName = (
   organizationName: string,
   db: DbClient = prisma,

@@ -1,4 +1,5 @@
 export const PERMISSIONS = {
+  ORGANIZATION_VIEW: "organization:view",
   ORGANIZATION_MANAGE: "organization:manage",
 
   MEMBER_INVITE: "member:invite",
@@ -17,6 +18,7 @@ export type PERMISSIONS = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const rolePermissions = {
   OWNER: [
+    "organization:view",
     "organization:manage",
     "member:invite",
     "member:remove",
@@ -28,6 +30,7 @@ export const rolePermissions = {
   ],
 
   ADMIN: [
+    "organization:view",
     "member:invite",
     "document:read",
     "document:upload",
