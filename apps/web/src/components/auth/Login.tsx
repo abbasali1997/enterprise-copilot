@@ -20,7 +20,7 @@ function Login({
   isRedirecting,
 }: LoginProps) {
   return (
-    <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
+    <div className=" w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
           Sign In To Your Organization
@@ -100,13 +100,13 @@ function Login({
           className="
               w-full
               rounded-lg
-              bg-indigo-500
               px-4
               py-2.5
               text-sm
               font-medium
               text-white
               transition
+              bg-indigo-500
               hover:bg-gray-900
               focus:outline-none
               focus:ring-2

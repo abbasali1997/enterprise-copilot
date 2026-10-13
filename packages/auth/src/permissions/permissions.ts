@@ -3,7 +3,8 @@ export const PERMISSIONS = {
   ORGANIZATION_MANAGE: "organization:manage",
 
   MEMBER_INVITE: "member:invite",
-  MEMBER_REMOVE: "member:remove",
+  MEMBER_UPDATE: "member:update",
+  MEMBER_REVOKE: "member:revoke",
 
   DOCUMENT_READ: "document:read",
   DOCUMENT_UPLOAD: "document:upload",
@@ -21,7 +22,8 @@ export const rolePermissions = {
     "organization:view",
     "organization:manage",
     "member:invite",
-    "member:remove",
+    "member:update",
+    "member:revoke",
     "document:read",
     "document:upload",
     "document:delete",
@@ -32,6 +34,8 @@ export const rolePermissions = {
   ADMIN: [
     "organization:view",
     "member:invite",
+    "member:update",
+    "member:revoke",
     "document:read",
     "document:upload",
     "document:delete",

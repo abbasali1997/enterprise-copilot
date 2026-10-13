@@ -5,14 +5,18 @@ import {
   inviteMemberSchema,
   respondToInviteSchema,
   selectOrganizationSchema,
+  updateOrganizationMemberSchema,
 } from "../schemas/organization.schema.js";
 import {
-  inviteOrganizationMember,
-  respondToInvitation,
   selectOrganization,
   listUserOrganizations,
   findOne,
 } from "../services/organization.service.js";
+import {
+  inviteOrganizationMember,
+  respondToInvitation,
+  updateOrganizationMember,
+} from "../services/organization-membership.service.js";
 
 export const organizationRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
@@ -41,17 +45,25 @@ export const organizationRouter = router({
     .input(inviteMemberSchema)
     .mutation(({ ctx, input }) => {
       // TODO: Send the raw invitation token in an invitation URL via email.
-      return inviteOrganizationMember({
-        organizationId: ctx.user.organizationId,
-        role: input.role,
-        invitedByUserId: ctx.user.id,
-        email: input.email,
-      });
+      return inviteOrganizationMember(
+        {
+          organizationId: ctx.user.organizationId,
+          role: input.role,
+          email: input.email,
+        },
+        ctx.user?.id,
+      );
     }),
 
   respondToInvite: publicProcedure
     .input(respondToInviteSchema)
     .mutation(async ({ ctx, input }) =>
       respondToInvitation(input, ctx.user?.id),
+    ),
+
+  updateMember: protectedProcedure
+    .input(updateOrganizationMemberSchema)
+    .mutation(({ ctx, input }) =>
+      updateOrganizationMember(input, ctx.user.id, ctx.user.organizationId),
     ),
 });

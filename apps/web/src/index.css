@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 #bg-area {
-    min-height: 0;
-
     background: radial-gradient(
             circle at 10% 5%,
             rgba(94, 234, 212, 0.65),

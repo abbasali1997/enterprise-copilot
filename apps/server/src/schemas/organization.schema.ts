@@ -30,3 +30,15 @@ export const respondToInviteSchema = z.discriminatedUnion("action", [
     token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   }),
 ]);
+
+export const updateOrganizationMemberSchema = z
+  .object({
+    memberId: z.string().trim().uuid(),
+    organizationId: z.string().trim().uuid(),
+    role: z.enum(["ADMIN", "MEMBER"]).optional(),
+    membershipStatus: z.enum(["ACTIVE", "SUSPENDED", "REMOVED"]).optional(),
+  })
+  .refine(
+    (input) => input.role !== undefined || input.membershipStatus !== undefined,
+    { message: "Provide a role or membership status to update" },
+  );

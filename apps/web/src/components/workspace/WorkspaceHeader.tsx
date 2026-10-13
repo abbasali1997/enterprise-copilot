@@ -1,3 +1,11 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faEye,
+  faGears,
+  faSection,
+  faUsers,
+} from "@fortawesome/free-solid-svg-icons";
+
 export type WorkspaceTab = "overview" | "members" | "settings";
 
 type WorkspaceHeaderProps = {
@@ -20,6 +28,19 @@ function WorkspaceHeader({
     }
 
     return substrings[0]?.charAt(0).toUpperCase();
+  };
+
+  const getSectionIcon = (tab: WorkspaceTab) => {
+    switch (tab) {
+      case "overview":
+        return faEye;
+      case "settings":
+        return faGears;
+      case "members":
+        return faUsers;
+      default:
+        return faSection;
+    }
   };
 
   return (
@@ -55,6 +76,7 @@ function WorkspaceHeader({
                 : "border-transparent text-gray-600"
             }`}
           >
+            <FontAwesomeIcon icon={getSectionIcon(tab)} className="mr-2" />
             {tab}
           </button>
         ))}

@@ -5,9 +5,11 @@ import WorkspaceHeader, {
 import { useCallback, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
 import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");
@@ -45,9 +47,31 @@ function WorkspacePage() {
         <main id="bg-area" className="col-span-7 min-h-0 min-w-0 w-full h-full">
           <div
             id="bg-container"
-            className="w-full h-full grid grid-rows-10 p-6 gap-6"
+            className="w-full h-full grid grid-rows-[auto_minmax(0,3fr)_minmax(0,7fr)] p-6 gap-6"
           >
-            <div className="row-span-3">
+            <nav aria-label="Breadcrumb">
+              <ol className="flex items-center gap-3 text-lg text-gray-600">
+                <li>
+                  <Link
+                    to="/"
+                    className="inline-flex items-center gap-2 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  >
+                    <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+                    Workspace Dashboard
+                  </Link>
+                </li>
+                <li aria-hidden="true">
+                  <FontAwesomeIcon icon={faChevronRight} />
+                </li>
+                <li
+                  aria-current="page"
+                  className="font-medium capitalize text-gray-900"
+                >
+                  {activeTab}
+                </li>
+              </ol>
+            </nav>
+            <div className="min-h-0">
               <WorkspaceHeader
                 name={organization?.name}
                 logo={organization.logoUrl ?? undefined}
@@ -56,7 +80,7 @@ function WorkspacePage() {
               />
             </div>
 
-            <div className="row-span-7 min-h-0 min-w-0">
+            <div className="min-h-0 min-w-0">
               {activeTab === "overview" && (
                 <section aria-label="Workspace overview">
                   {/* Add the Overview component here. */}

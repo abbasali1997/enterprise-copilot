@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCrown,
+  faPen,
+  faTrash,
+  faUserPlus,
+} from "@fortawesome/free-solid-svg-icons";
 
 type WorkspaceMembersPropType = {
   members: {
@@ -142,6 +147,7 @@ function WorkspaceMembers({
                         aria-label={`Edit ${member.user.name}`}
                         className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
+                        <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
                       </button>
                       <button
@@ -151,6 +157,7 @@ function WorkspaceMembers({
                         aria-label={`Remove ${member.user.name}`}
                         className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
+                        <FontAwesomeIcon icon={faTrash} className="mr-2" />
                         Remove
                       </button>
                     </div>
