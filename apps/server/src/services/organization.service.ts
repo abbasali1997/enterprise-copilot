@@ -45,6 +45,7 @@ import {
   findUserByEmail,
   findUserById,
 } from "../repositories/user.repository.js";
+import { logger } from "../utils/logger.js";
 
 export const findOne = async (
   id: string,
@@ -55,7 +56,7 @@ export const findOne = async (
   if (!user || user.status !== "ACTIVE") {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Your account is unavailable or inactive",
+      message: "Your account is unavailable or suspended",
     });
   }
   if (id !== activeOrganizationId) {
@@ -174,7 +175,7 @@ export const selectOrganization = async (
   if (!user || user.status !== "ACTIVE") {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Your account is unavailable or inactive",
+      message: "Your account is unavailable or suspended",
     });
   }
 
@@ -294,6 +295,8 @@ export const inviteOrganizationMember = async (input: {
   }
 
   const { token, tokenHash } = generateInvitationToken();
+
+  logger.info(`Inv Token: ${token}`);
 
   const invitation = await createOrganizationInvitation({
     email,

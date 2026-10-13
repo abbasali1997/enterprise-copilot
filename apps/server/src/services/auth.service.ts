@@ -37,7 +37,7 @@ export const getLoggedInUser = async (
   if (!user || user.status !== "ACTIVE") {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Your account is unavailable or inactive",
+      message: "Your account is unavailable or suspended",
     });
   }
 

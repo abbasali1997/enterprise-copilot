@@ -31,3 +31,31 @@
     background-image: url("/bg-pattern.png");
     background-size: cover;
 }
+
+.rainbow-btn {
+    background: linear-gradient(90deg, #8a2be2, #00bfff);
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 28px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rainbow-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.rainbow-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rainbow-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

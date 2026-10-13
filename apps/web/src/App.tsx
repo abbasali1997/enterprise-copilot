@@ -14,6 +14,7 @@ import AuthPage from "@/pages/auth/AuthPage.tsx";
 import { useContext } from "react";
 import WorkspacePage from "@/pages/workspace/WorkspacePage.tsx";
 import { can, PERMISSIONS } from "@enterprise/auth/permissions";
+import InvitationReply from "@/pages/invitation/InvitationReply.tsx";
 
 const ProtectedRoute = () => {
   const value = useContext(AuthContext);
@@ -74,6 +75,7 @@ function App() {
             <Route path="/health" Component={HealthPage} />
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<AuthPage />} />
+            <Route path="/invitation/:token" element={<InvitationReply />} />
             <Route element={<ProtectedRoute />}>
               <Route
                 path="/workspaces/change"

@@ -6,6 +6,7 @@ import {
   faComments,
   faBrain,
   type IconDefinition,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import "./sidebar.css";
 
@@ -64,8 +65,8 @@ const AppSidebar = () => {
       </div>
 
       <div className="p-4">
-        <button className="cursor-pointer w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800">
-          New Chat
+        <button className="rainbow-btn cursor-pointer w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800">
+          <FontAwesomeIcon icon={faPlus} /> New Chat
         </button>
       </div>
 

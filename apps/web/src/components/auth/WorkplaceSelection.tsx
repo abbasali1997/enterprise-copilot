@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import type { LoginResponse } from "@/lib/trpc.ts";
-import "./auth.css";
 
 type WorkplaceSelectionProps = {
   workspaceList: Extract<
@@ -96,7 +95,7 @@ function WorkplaceSelection({
           <button
             type="submit"
             disabled={!selectedId || busy}
-            className="proceed-btn"
+            className="rainbow-btn"
           >
             {isRedirecting
               ? "Redirecting"
