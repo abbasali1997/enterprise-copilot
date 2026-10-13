@@ -73,21 +73,26 @@ export const updateOrganizationMember = async (
     });
   }
 
-  if (!can(signedInMember.role, PERMISSIONS.MEMBER_UPDATE)) {
+  if (input.role !== undefined && !can(signedInMember.role, PERMISSIONS.MEMBER_ROLE_UPDATE)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You do not have permission to update members",
+      message: "You do not have permission to change member roles",
     });
   }
 
+  const statusPermissions = {
+    ACTIVE: PERMISSIONS.MEMBER_REACTIVATE,
+    SUSPENDED: PERMISSIONS.MEMBER_SUSPEND,
+    REMOVED: PERMISSIONS.MEMBER_REMOVE,
+  } as const;
+
   if (
-    input.membershipStatus &&
-    input.membershipStatus !== "ACTIVE" &&
-    !can(signedInMember.role, PERMISSIONS.MEMBER_REVOKE)
+    input.membershipStatus !== undefined &&
+    !can(signedInMember.role, statusPermissions[input.membershipStatus])
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You do not have permission to suspend/remove members",
+      message: `You do not have permission to ${input.membershipStatus === "ACTIVE" ? "reactivate" : input.membershipStatus === "SUSPENDED" ? "suspend" : "remove"} members`,
     });
   }
 
@@ -99,6 +104,16 @@ export const updateOrganizationMember = async (
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Member not found in this workspace",
+    });
+  }
+
+  if (
+    targetMember.userId === signedInUserId &&
+    (input.membershipStatus === "SUSPENDED" || input.membershipStatus === "REMOVED")
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You cannot suspend or remove your own membership",
     });
   }
 

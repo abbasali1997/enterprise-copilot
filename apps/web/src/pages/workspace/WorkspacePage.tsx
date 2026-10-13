@@ -1,14 +1,16 @@
+import { AuthContext } from "@/contexts/authContext.tsx";
+import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 import AppSidebar from "@/components/sidebar/Sidebar.tsx";
 import WorkspaceHeader, {
   type WorkspaceTab,
 } from "@/components/workspace/WorkspaceHeader.tsx";
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
 import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
-import RevokeMemberModal from "@/components/workspace/RevokeMemberModal.tsx";
+import MemberAccessModal from "@/components/workspace/MemberAccessModal.tsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 
@@ -18,11 +20,12 @@ function WorkspacePage() {
   const openAddMember = useCallback(() => setIsAddMemberOpen(true), []);
   const closeAddMember = useCallback(() => setIsAddMemberOpen(false), []);
 
-  const [revokeMember, setRevokeMember] = useState<{
+  const [accessMember, setAccessMember] = useState<{
     id: string;
     name: string;
   } | null>(null);
   const queryClient = useQueryClient();
+  const auth = useContext(AuthContext);
   const trpc = useTRPC();
   const organizationId = useParams().organizationId;
 
@@ -37,10 +40,14 @@ function WorkspacePage() {
     enabled: !!organizationId,
   });
 
+  const signedInMember = organization?.members.find((member) => member.userId === auth?.user?.id);
+  const canSuspend = !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_SUSPEND);
+  const canRemove = !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REMOVE);
+
   const updateMember = useMutation(
     trpc.organization.updateMember.mutationOptions({
       onSuccess: () => {
-        setRevokeMember(null);
+        setAccessMember(null);
         return queryClient.invalidateQueries({
           queryKey: trpc.organization.getById.queryKey({
             organizationId: organizationId ?? "",
@@ -60,12 +67,12 @@ function WorkspacePage() {
     });
   };
 
-  const onRevoke = (membershipStatus: "REMOVED" | "SUSPENDED") => {
-    if (!organizationId || !revokeMember || updateMember.isPending) return;
+  const onManageAccess = (membershipStatus: "REMOVED" | "SUSPENDED") => {
+    if (!organizationId || !accessMember || updateMember.isPending) return;
     updateMember.reset();
     updateMember.mutate({
       organizationId,
-      memberId: revokeMember.id,
+      memberId: accessMember.id,
       membershipStatus,
     });
   };
@@ -79,18 +86,20 @@ function WorkspacePage() {
         />
       ) : null}
 
-      {revokeMember && (
-        <RevokeMemberModal
-          memberName={revokeMember.name}
+      {accessMember && (
+        <MemberAccessModal
+          memberName={accessMember.name}
+          canSuspend={canSuspend}
+          canRemove={canRemove}
           isPending={updateMember.isPending}
           error={updateMember.error?.message}
-          onConfirm={onRevoke}
+          onConfirm={onManageAccess}
           onClose={() => {
-            if (!updateMember.isPending) setRevokeMember(null);
+            if (!updateMember.isPending) setAccessMember(null);
           }}
         />
       )}
-      {!revokeMember && updateMember.isError && (
+      {!accessMember && updateMember.isError && (
         <div
           role="alert"
           className="fixed right-6 top-6 z-50 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-lg"
@@ -156,10 +165,10 @@ function WorkspacePage() {
                   members={organization.members}
                   onAddMember={openAddMember}
                   onActivate={onActivate}
-                  onRevoke={(member) => {
+                  onManageAccess={(member) => {
                     if (updateMember.isPending) return;
                     updateMember.reset();
-                    setRevokeMember({ id: member.id, name: member.user.name });
+                    setAccessMember({ id: member.id, name: member.user.name });
                   }}
                 />
               )}

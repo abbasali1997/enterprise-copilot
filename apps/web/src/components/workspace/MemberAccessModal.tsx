@@ -1,21 +1,25 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-type RevokeMemberModalProps = {
+type MemberAccessModalProps = {
   memberName: string;
   isPending: boolean;
+  canSuspend: boolean;
+  canRemove: boolean;
   error?: string;
   onConfirm: (status: "SUSPENDED" | "REMOVED") => void;
   onClose: () => void;
 };
 
-export default function RevokeMemberModal({
+export default function MemberAccessModal({
   memberName,
+  canSuspend,
+  canRemove,
   isPending,
   error,
   onConfirm,
   onClose,
-}: RevokeMemberModalProps) {
+}: MemberAccessModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
@@ -48,7 +52,7 @@ export default function RevokeMemberModal({
       className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-2xl backdrop:bg-gray-900/30 backdrop:backdrop-blur-sm"
     >
       <h2 ref={titleRef} id={titleId} tabIndex={-1} className="text-xl font-bold focus:outline-none">
-        {confirmRemoval ? "Confirm member removal" : "Revoke member access"}
+        {confirmRemoval ? "Confirm member removal" : "Manage member access"}
       </h2>
       <p id={descriptionId} className="mt-3 text-sm text-gray-600">
         {confirmRemoval ? (
@@ -62,7 +66,7 @@ export default function RevokeMemberModal({
         ) : (
           <>
             Should {memberName} be suspended or removed from this workspace?
-            Both options revoke workspace access. Suspension keeps their
+            Both options withdraw workspace access. Suspension keeps their
             membership paused; removal marks their membership as removed.
           </>
         )}
@@ -99,7 +103,7 @@ export default function RevokeMemberModal({
             <button
               type="button"
               onClick={() => onConfirm("REMOVED")}
-              disabled={isPending}
+              disabled={isPending || !canRemove}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
             >
               Confirm removal
@@ -110,7 +114,7 @@ export default function RevokeMemberModal({
             <button
               type="button"
               onClick={() => onConfirm("SUSPENDED")}
-              disabled={isPending}
+              disabled={isPending || !canSuspend}
               className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
             >
               Suspend
@@ -118,7 +122,7 @@ export default function RevokeMemberModal({
             <button
               type="button"
               onClick={() => setConfirmRemoval(true)}
-              disabled={isPending}
+              disabled={isPending || !canRemove}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
             >
               Remove

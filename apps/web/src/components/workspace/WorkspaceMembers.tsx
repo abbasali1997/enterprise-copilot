@@ -28,7 +28,7 @@ type WorkspaceMembersPropType = {
   onAddMember?: () => void;
   onEdit?: (member: WorkspaceMembersPropType["members"][number]) => void;
   onActivate?: (member: WorkspaceMembersPropType["members"][number]) => void;
-  onRevoke?: (member: WorkspaceMembersPropType["members"][number]) => void;
+  onManageAccess?: (member: WorkspaceMembersPropType["members"][number]) => void;
 };
 
 const rolesStyles = {
@@ -49,7 +49,7 @@ function WorkspaceMembers({
   onAddMember,
   onEdit,
   onActivate,
-  onRevoke,
+  onManageAccess,
 }: WorkspaceMembersPropType) {
   const auth = useContext(AuthContext);
   const signedInMember = members.find(
@@ -58,9 +58,13 @@ function WorkspaceMembers({
   const canInvite =
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_INVITE);
   const canUpdate =
-    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_UPDATE);
-  const canRevoke =
-    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REVOKE);
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_ROLE_UPDATE);
+  const canSuspend =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_SUSPEND);
+  const canRemove =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REMOVE);
+  const canActivate =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REACTIVATE);
 
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -167,11 +171,11 @@ function WorkspaceMembers({
                         <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
                       </button>
-                      {member.status === "SUSPENDED" ? (
+                      {member.userId !== auth?.user?.id && (member.status === "SUSPENDED" ? (
                         <button
                           type="button"
                           onClick={() => onActivate?.(member)}
-                          disabled={!canUpdate}
+                          disabled={!canActivate}
                           aria-label={`Activate access for ${member.user.name}`}
                           className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
@@ -184,15 +188,15 @@ function WorkspaceMembers({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => onRevoke?.(member)}
-                          disabled={!canRevoke || member.status === "REMOVED"}
-                          aria-label={`Revoke access for ${member.user.name}`}
+                          onClick={() => onManageAccess?.(member)}
+                          disabled={(!canSuspend && !canRemove) || member.status === "REMOVED"}
+                          aria-label={`Manage access for ${member.user.name}`}
                           className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                          Revoke
+                          Manage access
                         </button>
-                      )}
+                      ))}
                     </div>
                   </td>
                 </tr>
