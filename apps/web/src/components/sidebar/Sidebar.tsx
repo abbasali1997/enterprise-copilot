@@ -16,6 +16,12 @@ type SidebarItemProps = {
   active?: boolean;
 };
 
+const rolesStyles = {
+  OWNER: "bg-purple-200 text-purple-700",
+  ADMIN: "bg-indigo-200 text-indigo-700",
+  MEMBER: "bg-gray-200 text-gray-700",
+};
+
 const SidebarItem = ({ children, icon, active = false }: SidebarItemProps) => {
   return (
     <button
@@ -88,8 +94,14 @@ const AppSidebar = () => {
                 alt=""
               />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-gray-900">
-                  {auth.user.name}
+                <span className="block truncate text-lg font-medium text-gray-900 flex items-center">
+                  <span className="p1">{auth.user.name}</span>
+                  <span
+                    style={{ fontSize: "0.6rem" }}
+                    className={`${rolesStyles[auth.user.organization.role]} p-1 px-2 ml-2 rounded-xl`}
+                  >
+                    {auth.user.organization.role}
+                  </span>
                 </span>
                 <span className="block truncate text-xs text-gray-500">
                   {auth.user.email}

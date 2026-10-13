@@ -1,9 +1,12 @@
-import { memo } from "react";
+import { memo, useContext } from "react";
+import { AuthContext } from "@/contexts/authContext.tsx";
+import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCrown,
   faPen,
   faTrash,
+  faUserCheck,
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -24,7 +27,8 @@ type WorkspaceMembersPropType = {
   }[];
   onAddMember?: () => void;
   onEdit?: (member: WorkspaceMembersPropType["members"][number]) => void;
-  onRemove?: (member: WorkspaceMembersPropType["members"][number]) => void;
+  onActivate?: (member: WorkspaceMembersPropType["members"][number]) => void;
+  onRevoke?: (member: WorkspaceMembersPropType["members"][number]) => void;
 };
 
 const rolesStyles = {
@@ -44,8 +48,20 @@ function WorkspaceMembers({
   members,
   onAddMember,
   onEdit,
-  onRemove,
+  onActivate,
+  onRevoke,
 }: WorkspaceMembersPropType) {
+  const auth = useContext(AuthContext);
+  const signedInMember = members.find(
+    (member) => member.userId === auth?.user?.id,
+  );
+  const canInvite =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_INVITE);
+  const canUpdate =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_UPDATE);
+  const canRevoke =
+    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REVOKE);
+
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
     month: "short",
@@ -68,7 +84,8 @@ function WorkspaceMembers({
         <button
           type="button"
           onClick={onAddMember}
-          className="rainbow-btn inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          disabled={!canInvite}
+          className="rainbow-btn inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
         >
           <FontAwesomeIcon icon={faUserPlus} />
           Add Member
@@ -143,23 +160,39 @@ function WorkspaceMembers({
                       <button
                         type="button"
                         onClick={() => onEdit?.(member)}
-                        disabled={!onEdit}
+                        disabled={!canUpdate || member.status === "REMOVED"}
                         aria-label={`Edit ${member.user.name}`}
                         className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onRemove?.(member)}
-                        disabled={!onRemove}
-                        aria-label={`Remove ${member.user.name}`}
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                        Remove
-                      </button>
+                      {member.status === "SUSPENDED" ? (
+                        <button
+                          type="button"
+                          onClick={() => onActivate?.(member)}
+                          disabled={!canUpdate}
+                          aria-label={`Activate access for ${member.user.name}`}
+                          className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <FontAwesomeIcon
+                            icon={faUserCheck}
+                            className="mr-2"
+                          />
+                          Activate
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onRevoke?.(member)}
+                          disabled={!canRevoke || member.status === "REMOVED"}
+                          aria-label={`Revoke access for ${member.user.name}`}
+                          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                          Revoke
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

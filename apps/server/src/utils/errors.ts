@@ -16,39 +16,55 @@ const stringifyError = (
   return JSON.stringify(payload, null, "\t");
 };
 
-export function handleTRPCError(error: TRPCError, path?: string): void {
+export function handleTRPCError(
+  error: TRPCError,
+  path?: string,
+  user?: { id: string | undefined; organizationId: string },
+): void {
+  const requestContext = {
+    path,
+    userId: user?.id,
+    organizationId: user?.organizationId,
+  };
   switch (error.code) {
     case "UNAUTHORIZED":
       logger.warn(
-        stringifyError(error.code, error.message, { path }),
+        stringifyError(error.code, error.message, requestContext),
         "Unauthorized request",
       );
       break;
 
     case "FORBIDDEN":
       logger.warn(
-        stringifyError(error.code, error.message, { path }),
+        stringifyError(error.code, error.message, requestContext),
         "Forbidden request",
+      );
+      break;
+
+    case "CONFLICT":
+      logger.warn(
+        stringifyError(error.code, error.message, requestContext),
+        "Conflicting request",
       );
       break;
 
     case "BAD_REQUEST":
       logger.warn(
-        stringifyError(error.code, error.message, { path, cause: error.cause }),
+        stringifyError(error.code, error.message, requestContext),
         "Invalid request",
       );
       break;
 
     case "NOT_FOUND":
       logger.info(
-        stringifyError(error.code, error.message, { path }),
+        stringifyError(error.code, error.message, requestContext),
         "Resource not found",
       );
       break;
 
     default:
       logger.error(
-        stringifyError(error.code, error.message, { path }),
+        stringifyError(error.code, error.message, requestContext),
         "Unhandled tRPC error",
       );
   }

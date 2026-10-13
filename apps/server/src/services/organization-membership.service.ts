@@ -109,7 +109,7 @@ export const updateOrganizationMember = async (
     });
   }
 
-  return prisma.organizationMember.update({
+  const updatedMember = await prisma.organizationMember.update({
     where: {
       id: input.memberId,
       organizationId: input.organizationId,
@@ -120,6 +120,11 @@ export const updateOrganizationMember = async (
       status: input.membershipStatus,
     },
   });
+
+  logger.success(
+    `Membership ${updatedMember.id} in workspace ${updatedMember.organizationId} updated by user ${signedInUserId}: role ${targetMember.role} -> ${updatedMember.role}, status ${targetMember.status} -> ${updatedMember.status}`,
+  );
+  return updatedMember;
 };
 
 export const inviteOrganizationMember = async (
@@ -187,8 +192,6 @@ export const inviteOrganizationMember = async (
 
   const { token, tokenHash } = generateInvitationToken();
 
-  logger.info(`Inv Token: ${token}`);
-
   const invitation = await createOrganizationInvitation({
     email,
     organizationId: input.organizationId,
@@ -197,6 +200,10 @@ export const inviteOrganizationMember = async (
     tokenHash,
     expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
   });
+
+  logger.success(
+    `Invitation ${invitation.id} created for workspace ${input.organizationId} by user ${signedInUserId} with role ${input.role}`,
+  );
 
   return {
     id: invitation.id,
@@ -350,6 +357,10 @@ export const acceptOrganizationInvite = async (
       };
     });
 
+    logger.success(
+      `Invitation accepted by user ${result.user.id}; membership ${result.membership.id} in workspace ${result.membership.organizationId} has role ${result.membership.role}`,
+    );
+
     const token = generateJWT({
       userId: result.user.id,
 
@@ -387,7 +398,7 @@ export const rejectOrganizationInvite = async (input: RejectInviteInput) => {
 
     const tokenHash = hashInvitationToken(input.token);
 
-    await prisma.$transaction(async (tx) => {
+    const rejectedInvitation = await prisma.$transaction(async (tx) => {
       let invitation = await findOrganizationInvitationByTokenHash(
         tokenHash,
         tx,
@@ -410,7 +421,12 @@ export const rejectOrganizationInvite = async (input: RejectInviteInput) => {
           message: "Invitation is expired or already used",
         });
       }
+      return { id: invitation.id, organizationId: invitation.organizationId };
     });
+
+    logger.success(
+      `Invitation ${rejectedInvitation.id} rejected for workspace ${rejectedInvitation.organizationId}`,
+    );
 
     return {
       action: "reject" as const,

@@ -4,10 +4,11 @@ import WorkspaceHeader, {
 } from "@/components/workspace/WorkspaceHeader.tsx";
 import { useCallback, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
 import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
+import RevokeMemberModal from "@/components/workspace/RevokeMemberModal.tsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 
@@ -17,6 +18,11 @@ function WorkspacePage() {
   const openAddMember = useCallback(() => setIsAddMemberOpen(true), []);
   const closeAddMember = useCallback(() => setIsAddMemberOpen(false), []);
 
+  const [revokeMember, setRevokeMember] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const queryClient = useQueryClient();
   const trpc = useTRPC();
   const organizationId = useParams().organizationId;
 
@@ -31,6 +37,39 @@ function WorkspacePage() {
     enabled: !!organizationId,
   });
 
+  const updateMember = useMutation(
+    trpc.organization.updateMember.mutationOptions({
+      onSuccess: () => {
+        setRevokeMember(null);
+        return queryClient.invalidateQueries({
+          queryKey: trpc.organization.getById.queryKey({
+            organizationId: organizationId ?? "",
+          }),
+        });
+      },
+    }),
+  );
+
+  const onActivate = (member: { id: string }) => {
+    if (!organizationId || updateMember.isPending) return;
+    updateMember.reset();
+    updateMember.mutate({
+      organizationId,
+      memberId: member.id,
+      membershipStatus: "ACTIVE",
+    });
+  };
+
+  const onRevoke = (membershipStatus: "REMOVED" | "SUSPENDED") => {
+    if (!organizationId || !revokeMember || updateMember.isPending) return;
+    updateMember.reset();
+    updateMember.mutate({
+      organizationId,
+      memberId: revokeMember.id,
+      membershipStatus,
+    });
+  };
+
   return (
     <div className="w-full h-screen grid grid-cols-9 overflow-hidden">
       {organization && isAddMemberOpen ? (
@@ -40,6 +79,32 @@ function WorkspacePage() {
         />
       ) : null}
 
+      {revokeMember && (
+        <RevokeMemberModal
+          memberName={revokeMember.name}
+          isPending={updateMember.isPending}
+          error={updateMember.error?.message}
+          onConfirm={onRevoke}
+          onClose={() => {
+            if (!updateMember.isPending) setRevokeMember(null);
+          }}
+        />
+      )}
+      {!revokeMember && updateMember.isError && (
+        <div
+          role="alert"
+          className="fixed right-6 top-6 z-50 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-lg"
+        >
+          {updateMember.error.message}
+          <button
+            type="button"
+            onClick={() => updateMember.reset()}
+            className="ml-4 font-semibold underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className="col-span-2 min-h-0 min-w-0">
         <AppSidebar />
       </div>
@@ -90,6 +155,12 @@ function WorkspacePage() {
                 <WorkspaceMembers
                   members={organization.members}
                   onAddMember={openAddMember}
+                  onActivate={onActivate}
+                  onRevoke={(member) => {
+                    if (updateMember.isPending) return;
+                    updateMember.reset();
+                    setRevokeMember({ id: member.id, name: member.user.name });
+                  }}
                 />
               )}
               {activeTab === "settings" && (

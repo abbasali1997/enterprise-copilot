@@ -73,7 +73,6 @@ export const getLoggedInUser = async (
 };
 
 export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
-  console.log(input);
   const normalizedEmail = normalizeEmail(input.email);
 
   const user = await findUserByEmail(normalizedEmail);
@@ -158,7 +157,7 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   });
 
   logger.success(
-    `User "${user.name}" authenticated${response.status === "workspace_selection_required" ? "; workspace selection required" : ""}.`,
+    `User ${user.id} authenticated; result ${response.status}; active workspaces ${memberships.length}`,
   );
   return response;
 };
@@ -197,7 +196,7 @@ export const registerUser = async (input: RegisterInput) => {
     });
 
     logger.success(
-      `New user: ${newUser.name} registered for organization: ${newOrganization.slug} with membership role as: ${newMember.role}`,
+      `User ${newUser.id} registered with workspace ${newOrganization.id} and membership ${newMember.id} as ${newMember.role}`,
     );
 
     return {

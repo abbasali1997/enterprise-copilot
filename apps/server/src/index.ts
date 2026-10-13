@@ -31,15 +31,14 @@ app.use(
     router: appRouter,
     createContext,
 
-    onError({ error, path }) {
-      handleTRPCError(error, path);
+    onError({ error, path, ctx }) {
+      handleTRPCError(error, path, ctx?.user ?? undefined);
     },
   }),
 );
 
 // Server
 app.listen(SERVER_PORT, () => {
-  // Todo: Add logger
   logger.info(`Server is Running on PORT: ${SERVER_PORT}`);
   logger.info(`tRPC endpoint: http://localhost:${SERVER_PORT}/trpc`);
 });

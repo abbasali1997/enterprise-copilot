@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.js";
 import type { AuthResponse } from "../types/auth.type.js";
 import { type Prisma, prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
@@ -63,9 +64,7 @@ export const findOne = async (
             select: { name: true, email: true },
           },
         },
-        orderBy: {
-          role: "asc",
-        },
+        orderBy: [{ role: "asc" }, { joinedAt: "asc" }, { id: "asc" }],
       },
     },
   });
@@ -167,6 +166,8 @@ export const selectOrganization = async (
       message: "No active membership in this organization",
     });
   }
+
+  logger.success(`User ${user.id} selected workspace ${membership.organizationId} with role ${membership.role}`);
 
   return {
     status: "authenticated",
