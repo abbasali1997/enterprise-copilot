@@ -28,7 +28,9 @@ type WorkspaceMembersPropType = {
   onAddMember?: () => void;
   onEdit?: (member: WorkspaceMembersPropType["members"][number]) => void;
   onActivate?: (member: WorkspaceMembersPropType["members"][number]) => void;
-  onManageAccess?: (member: WorkspaceMembersPropType["members"][number]) => void;
+  onManageAccess?: (
+    member: WorkspaceMembersPropType["members"][number],
+  ) => void;
 };
 
 const rolesStyles = {
@@ -58,7 +60,8 @@ function WorkspaceMembers({
   const canInvite =
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_INVITE);
   const canUpdate =
-    !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_ROLE_UPDATE);
+    !!signedInMember &&
+    can(signedInMember.role, PERMISSIONS.MEMBER_ROLE_UPDATE);
   const canSuspend =
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_SUSPEND);
   const canRemove =
@@ -96,8 +99,8 @@ function WorkspaceMembers({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[760px] text-left text-sm shadow-lg rounded-lg">
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[1100px] table-auto text-left text-sm shadow-lg rounded-lg">
           <caption className="sr-only">
             Workspace members and their roles, status, and join dates
           </caption>
@@ -108,7 +111,7 @@ function WorkspaceMembers({
                   <th
                     key={column}
                     scope="col"
-                    className="border-b border-gray-200 px-5 py-4 font-semibold"
+                    className="whitespace-nowrap border-b border-gray-200 px-5 py-4 font-semibold"
                   >
                     {column}
                   </th>
@@ -123,7 +126,7 @@ function WorkspaceMembers({
                 <tr key={member.id} className="transition hover:bg-gray-50/70">
                   <th
                     scope="row"
-                    className="px-5 py-4 font-medium text-gray-900"
+                    className="min-w-[180px] px-5 py-4 font-medium text-gray-900"
                   >
                     {member.user.name}{" "}
                     {member.role === "OWNER" ? (
@@ -133,24 +136,24 @@ function WorkspaceMembers({
                       />
                     ) : null}
                   </th>
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="min-w-[260px] whitespace-nowrap px-5 py-4 text-gray-600">
                     {member.user.email}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
                     <span
                       className={`rounded-4xl px-2.5 py-1 text-xs font-medium capitalize ${rolesStyles[member.role]}`}
                     >
                       {member.role.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusStyles[member.status]}`}
                     >
                       {member.status.toLowerCase()}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-5 py-4 text-gray-600">
+                  <td className="min-w-[160px] whitespace-nowrap px-5 py-4 text-gray-600">
                     {Number.isNaN(joinedAt.getTime()) ? (
                       "—"
                     ) : (
@@ -159,8 +162,8 @@ function WorkspaceMembers({
                       </time>
                     )}
                   </td>
-                  <td className="px-5 py-4">
-                    <div className="flex gap-2">
+                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
+                    <div className="flex min-w-[240px] flex-nowrap gap-2 [&>button]:shrink-0 [&>button]:whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => onEdit?.(member)}
@@ -171,32 +174,36 @@ function WorkspaceMembers({
                         <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
                       </button>
-                      {member.userId !== auth?.user?.id && (member.status === "SUSPENDED" ? (
-                        <button
-                          type="button"
-                          onClick={() => onActivate?.(member)}
-                          disabled={!canActivate}
-                          aria-label={`Activate access for ${member.user.name}`}
-                          className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <FontAwesomeIcon
-                            icon={faUserCheck}
-                            className="mr-2"
-                          />
-                          Activate
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onManageAccess?.(member)}
-                          disabled={(!canSuspend && !canRemove) || member.status === "REMOVED"}
-                          aria-label={`Manage access for ${member.user.name}`}
-                          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                          Manage access
-                        </button>
-                      ))}
+                      {member.userId !== auth?.user?.id &&
+                        (member.status === "SUSPENDED" ? (
+                          <button
+                            type="button"
+                            onClick={() => onActivate?.(member)}
+                            disabled={!canActivate}
+                            aria-label={`Activate access for ${member.user.name}`}
+                            className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <FontAwesomeIcon
+                              icon={faUserCheck}
+                              className="mr-2"
+                            />
+                            Activate
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onManageAccess?.(member)}
+                            disabled={
+                              (!canSuspend && !canRemove) ||
+                              member.status === "REMOVED"
+                            }
+                            aria-label={`Manage access for ${member.user.name}`}
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                            Manage Access
+                          </button>
+                        ))}
                     </div>
                   </td>
                 </tr>

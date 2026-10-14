@@ -132,7 +132,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                           setMenuOpen(false);
                           onManage(workspace.id);
                         }}
-                        className="flex justify-around w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
+                        className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
                       >
                         <FontAwesomeIcon
                           icon={faUserGear}
@@ -151,7 +151,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                         if (onChangeWorkspace) onChangeWorkspace();
                         else navigate("/workspaces/change");
                       }}
-                      className="flex justify-around w-full rounded-lg px-3 py-2 text-right text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
+                      className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-right text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
                     >
                       <FontAwesomeIcon
                         icon={faArrowsRotate}
