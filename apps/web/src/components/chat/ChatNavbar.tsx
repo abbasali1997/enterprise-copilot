@@ -28,8 +28,8 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
     ? can(auth?.user?.organization.role, PERMISSIONS.ORGANIZATION_VIEW)
     : false;
 
-  const onManage = (organizationId: string) => {
-    navigate(`/workspace/${organizationId}`);
+  const onManage = () => {
+    navigate(`/workspace`);
     return;
   };
 
@@ -130,7 +130,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                         type="button"
                         onClick={() => {
                           setMenuOpen(false);
-                          onManage(workspace.id);
+                          onManage();
                         }}
                         className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
                       >

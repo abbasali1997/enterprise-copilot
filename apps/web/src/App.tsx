@@ -83,10 +83,7 @@ function App() {
               />
             </Route>
             <Route element={<ProtectedAdminRoute />}>
-              <Route
-                path="/workspace/:organizationId"
-                element={<WorkspacePage />}
-              />
+              <Route path="/workspace" element={<WorkspacePage />} />
             </Route>
           </Routes>
         </div>

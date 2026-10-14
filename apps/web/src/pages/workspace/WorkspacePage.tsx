@@ -7,7 +7,6 @@ import WorkspaceHeader, {
 import { useCallback, useContext, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
 import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
 import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
 import MemberAccessModal from "@/components/workspace/MemberAccessModal.tsx";
@@ -26,17 +25,24 @@ function WorkspacePage() {
   const queryClient = useQueryClient();
   const auth = useContext(AuthContext);
   const trpc = useTRPC();
-  const organizationId = useParams().organizationId;
 
-  const {
-    data: organization,
-    // isPending,
-    // error,
-  } = useQuery({
-    ...trpc.organization.getById.queryOptions({
-      organizationId: organizationId ?? "",
-    }),
-    enabled: !!organizationId,
+  const organizationId = auth?.user?.organization.id;
+
+  const workspaceQueryKey: [string[], { input: unknown; type: "query" }] = [
+    trpc.organization.getActive.queryKey()[0],
+    {
+      input: {
+        userId: auth?.user?.id,
+        organizationId: auth?.user?.organization.id,
+      },
+      type: "query",
+    },
+  ];
+
+  const { data: organization } = useQuery({
+    ...trpc.organization.getActive.queryOptions(),
+    queryKey: workspaceQueryKey,
+    enabled: !!auth?.user && organizationId === auth.user.organization.id,
   });
 
   const signedInMember = organization?.members.find(
@@ -52,9 +58,7 @@ function WorkspacePage() {
       onSuccess: () => {
         setAccessMember(null);
         return queryClient.invalidateQueries({
-          queryKey: trpc.organization.getById.queryKey({
-            organizationId: organizationId ?? "",
-          }),
+          queryKey: workspaceQueryKey,
         });
       },
     }),
@@ -64,7 +68,6 @@ function WorkspacePage() {
     if (!organizationId || updateMember.isPending) return;
     updateMember.reset();
     updateMember.mutate({
-      organizationId,
       memberId: member.id,
       membershipStatus: "ACTIVE",
     });
@@ -74,7 +77,6 @@ function WorkspacePage() {
     if (!organizationId || !accessMember || updateMember.isPending) return;
     updateMember.reset();
     updateMember.mutate({
-      organizationId,
       memberId: accessMember.id,
       membershipStatus,
     });
