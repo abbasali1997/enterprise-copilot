@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-export const getOrganizationByIdSchema = z.object({
-  organizationId: z.string().trim().uuid(),
-});
-
 export const changeOrganizationSchema = z.object({
   organizationId: z.string().trim().uuid(),
 });
@@ -34,7 +30,6 @@ export const respondToInviteSchema = z.discriminatedUnion("action", [
 export const updateOrganizationMemberSchema = z
   .object({
     memberId: z.string().trim().uuid(),
-    organizationId: z.string().trim().uuid(),
     role: z.enum(["ADMIN", "MEMBER"]).optional(),
     membershipStatus: z.enum(["ACTIVE", "SUSPENDED", "REMOVED"]).optional(),
   })

@@ -1,3 +1,9 @@
+import {
+  createOrganizationMember,
+  findOrganizationMember,
+  findOne as findOrganizationMemberRecord,
+  updateOrganizationMemberRecord,
+} from "../repositories/organization-membership.repository.js";
 import { prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
 import {
@@ -17,9 +23,7 @@ import { normalizeEmail } from "../utils/helpers.js";
 import {
   claimOrganizationInvitation,
   createOrganizationInvitation,
-  createOrganizationMember,
   findOrganizationInvitationByTokenHash,
-  findOrganizationMember,
   findPendingOrganizationInvitation,
   markInvitationExpired,
   setInvitationAcceptedByUser,
@@ -34,20 +38,12 @@ import { logger } from "../utils/logger.js";
 export const updateOrganizationMember = async (
   input: {
     memberId: string;
-    organizationId: string;
     role?: "MEMBER" | "ADMIN";
     membershipStatus?: "ACTIVE" | "SUSPENDED" | "REMOVED";
   },
   signedInUserId: string,
   activeOrganizationId: string,
 ) => {
-  if (input.organizationId !== activeOrganizationId) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Switch to this workspace before managing it",
-    });
-  }
-
   if (input.role === undefined && input.membershipStatus === undefined) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -55,9 +51,9 @@ export const updateOrganizationMember = async (
     });
   }
 
-  const signedInMember = await prisma.organizationMember.findFirst({
+  const signedInMember = await findOrganizationMemberRecord({
     where: {
-      organizationId: input.organizationId,
+      organizationId: activeOrganizationId,
       userId: signedInUserId,
       status: "ACTIVE",
       user: { status: "ACTIVE" },
@@ -96,8 +92,8 @@ export const updateOrganizationMember = async (
     });
   }
 
-  const targetMember = await prisma.organizationMember.findFirst({
-    where: { id: input.memberId, organizationId: input.organizationId },
+  const targetMember = await findOrganizationMemberRecord({
+    where: { id: input.memberId, organizationId: activeOrganizationId },
   });
 
   if (!targetMember) {
@@ -124,10 +120,10 @@ export const updateOrganizationMember = async (
     });
   }
 
-  const updatedMember = await prisma.organizationMember.update({
+  const updatedMember = await updateOrganizationMemberRecord({
     where: {
       id: input.memberId,
-      organizationId: input.organizationId,
+      organizationId: activeOrganizationId,
       role: { not: "OWNER" },
     },
     data: {
@@ -145,15 +141,15 @@ export const updateOrganizationMember = async (
 export const inviteOrganizationMember = async (
   input: {
     email: string;
-    organizationId: string;
     role: "MEMBER" | "ADMIN";
   },
   signedInUserId: string,
+  activeOrganizationId: string,
 ) => {
   const email = normalizeEmail(input.email);
 
   const inviterMembership = await findOrganizationMember({
-    organizationId: input.organizationId,
+    organizationId: activeOrganizationId,
     userId: signedInUserId,
   });
 
@@ -178,7 +174,7 @@ export const inviteOrganizationMember = async (
 
   if (existingUser) {
     const existingMembership = await findOrganizationMember({
-      organizationId: input.organizationId,
+      organizationId: activeOrganizationId,
       userId: existingUser.id,
     });
 
@@ -194,7 +190,7 @@ export const inviteOrganizationMember = async (
    * Don't create multiple live invitations.
    */
   const existingInvitation = await findPendingOrganizationInvitation({
-    organizationId: input.organizationId,
+    organizationId: activeOrganizationId,
     email,
   });
 
@@ -209,7 +205,7 @@ export const inviteOrganizationMember = async (
 
   const invitation = await createOrganizationInvitation({
     email,
-    organizationId: input.organizationId,
+    organizationId: activeOrganizationId,
     role: input.role,
     invitedByUserId: signedInUserId,
     tokenHash,
@@ -217,7 +213,7 @@ export const inviteOrganizationMember = async (
   });
 
   logger.success(
-    `Invitation ${invitation.id} created for workspace ${input.organizationId} by user ${signedInUserId} with role ${input.role}`,
+    `Invitation ${invitation.id} created for workspace ${activeOrganizationId} by user ${signedInUserId} with role ${input.role}`,
   );
 
   return {

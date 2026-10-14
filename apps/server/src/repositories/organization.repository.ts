@@ -32,44 +32,6 @@ export const createOrganizationRecord = (
   });
 };
 
-export const createOrganizationMember = (
-  input: {
-    organizationId: string;
-    userId: string;
-    role: "OWNER" | "ADMIN" | "MEMBER";
-  },
-  db: DbClient = prisma,
-) => {
-  return db.organizationMember.create({
-    data: input,
-  });
-};
-
-export const findOrganizationMembers = <
-  T extends Prisma.OrganizationMemberFindManyArgs,
->(
-  args: Prisma.SelectSubset<T, Prisma.OrganizationMemberFindManyArgs>,
-) => {
-  return prisma.organizationMember.findMany<T>(args);
-};
-
-export const findOrganizationMember = (
-  input: {
-    organizationId: string;
-    userId: string;
-  },
-  db: DbClient = prisma,
-) => {
-  return db.organizationMember.findUnique({
-    where: {
-      organizationId_userId: {
-        organizationId: input.organizationId,
-        userId: input.userId,
-      },
-    },
-  });
-};
-
 export const createOrganizationInvitation = (
   input: {
     email: string;

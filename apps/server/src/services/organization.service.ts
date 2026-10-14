@@ -1,3 +1,6 @@
+import {
+  findOrganizationMembers,
+} from "../repositories/organization-membership.repository.js";
 import { logger } from "../utils/logger.js";
 import type { AuthResponse } from "../types/auth.type.js";
 import { type Prisma, prisma } from "@enterprise/db";
@@ -15,12 +18,10 @@ import {
   countOrganizationsByName,
   createOrganizationRecord,
   findOrganization,
-  findOrganizationMembers,
 } from "../repositories/organization.repository.js";
 import { findUserById } from "../repositories/user.repository.js";
 
 export const findOne = async (
-  id: string,
   userId: string,
   activeOrganizationId: string,
 ) => {
@@ -29,12 +30,6 @@ export const findOne = async (
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Your account is unavailable or suspended",
-    });
-  }
-  if (id !== activeOrganizationId) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Switch to this workspace before managing it",
     });
   }
 
@@ -51,7 +46,7 @@ export const findOne = async (
 
   const organization = await findOrganization({
     where: {
-      id,
+      id: activeOrganizationId,
       status: "ACTIVE",
       members: {
         some: authorizedMember,

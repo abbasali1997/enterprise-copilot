@@ -1,3 +1,7 @@
+import {
+  createOrganizationMember,
+  findOrganizationMembers,
+} from "../repositories/organization-membership.repository.js";
 import type {
   AuthResponse,
   LoginInput,
@@ -19,10 +23,6 @@ import {
   updateUser,
 } from "../repositories/user.repository.js";
 import { createOrganization } from "./organization.service.js";
-import {
-  createOrganizationMember,
-  findOrganizationMembers,
-} from "../repositories/organization.repository.js";
 import { logger } from "../utils/logger.js";
 import { registerResponseError } from "../error-handlers/auth.errorHandler.js";
 import { TRPCError } from "@trpc/server";
@@ -58,6 +58,7 @@ export const getLoggedInUser = async (
       message: "Your organization membership is unavailable or inactive",
     });
   }
+
   return {
     id: user.id,
     email: user.email,
