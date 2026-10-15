@@ -1,3 +1,4 @@
+import type { OrganizationRole } from "@enterprise/auth";
 import {
   findOrganizationMembers,
 } from "../repositories/organization-membership.repository.js";
@@ -7,7 +8,6 @@ import { type Prisma, prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
-  ORGANIZATION_ROLES,
   can,
   generateJWT,
   PERMISSIONS,
@@ -22,35 +22,17 @@ import {
 import { findUserById } from "../repositories/user.repository.js";
 
 export const findOne = async (
-  userId: string,
   activeOrganizationId: string,
+  role: OrganizationRole,
 ) => {
-  const user = await findUserById(userId);
-  if (!user || user.status !== "ACTIVE") {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Your account is unavailable or suspended",
-    });
+  if (!can(role, PERMISSIONS.ORGANIZATION_VIEW)) {
+    throw new TRPCError({ code: "FORBIDDEN" });
   }
-
-  const allowedRoles = ORGANIZATION_ROLES.filter((role) =>
-    can(role, PERMISSIONS.ORGANIZATION_VIEW),
-  );
-
-  const authorizedMember = {
-    userId,
-    status: "ACTIVE",
-    role: { in: allowedRoles },
-    user: { status: "ACTIVE" },
-  } satisfies Prisma.OrganizationMemberWhereInput;
 
   const organization = await findOrganization({
     where: {
       id: activeOrganizationId,
       status: "ACTIVE",
-      members: {
-        some: authorizedMember,
-      },
     },
     include: {
       members: {

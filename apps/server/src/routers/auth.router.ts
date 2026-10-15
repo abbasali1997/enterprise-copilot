@@ -1,4 +1,4 @@
-import { protectedProcedure, publicProcedure, router } from "../trpc.js";
+import { tenantProcedure, publicProcedure, router } from "../trpc.js";
 import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 import {
   getLoggedInUser,
@@ -7,8 +7,8 @@ import {
 } from "../services/auth.service.js";
 
 export const authRouter = router({
-  me: protectedProcedure.query(async ({ ctx }) =>
-    getLoggedInUser(ctx.user.id, ctx.user.organizationId),
+  me: tenantProcedure.query(async ({ ctx }) =>
+    getLoggedInUser(ctx.user.id, ctx.membership),
   ),
 
   login: publicProcedure

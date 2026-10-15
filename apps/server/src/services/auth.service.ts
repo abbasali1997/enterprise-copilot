@@ -1,3 +1,4 @@
+import type { getMembership } from "../repositories/organization-membership.repository.js";
 import {
   createOrganizationMember,
   findOrganizationMembers,
@@ -30,7 +31,7 @@ import { normalizeEmail } from "../utils/helpers.js";
 
 export const getLoggedInUser = async (
   userId: string,
-  organizationId: string,
+  membership: NonNullable<Awaited<ReturnType<typeof getMembership>>>,
 ) => {
   const user = await findUserById(userId);
 
@@ -38,24 +39,6 @@ export const getLoggedInUser = async (
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Your account is unavailable or suspended",
-    });
-  }
-
-  const memberships = await findOrganizationMembers({
-    where: {
-      userId,
-      organizationId,
-      status: "ACTIVE",
-      organization: { status: "ACTIVE" },
-    },
-    include: { organization: true },
-    take: 1,
-  });
-  const membership = memberships[0];
-  if (!membership) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Your organization membership is unavailable or inactive",
     });
   }
 

@@ -1,3 +1,4 @@
+import type { OrganizationRole } from "@enterprise/auth";
 import {
   createOrganizationMember,
   findOrganizationMember,
@@ -43,6 +44,7 @@ export const updateOrganizationMember = async (
   },
   signedInUserId: string,
   activeOrganizationId: string,
+  role: OrganizationRole,
 ) => {
   if (input.role === undefined && input.membershipStatus === undefined) {
     throw new TRPCError({
@@ -51,25 +53,7 @@ export const updateOrganizationMember = async (
     });
   }
 
-  const signedInMember = await findOrganizationMemberRecord({
-    where: {
-      organizationId: activeOrganizationId,
-      userId: signedInUserId,
-      status: "ACTIVE",
-      user: { status: "ACTIVE" },
-      organization: { status: "ACTIVE" },
-    },
-  });
-
-  if (!signedInMember) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message:
-        "Your account, workspace, or membership is unavailable or inactive",
-    });
-  }
-
-  if (input.role !== undefined && !can(signedInMember.role, PERMISSIONS.MEMBER_ROLE_UPDATE)) {
+  if (input.role !== undefined && !can(role, PERMISSIONS.MEMBER_ROLE_UPDATE)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You do not have permission to change member roles",
@@ -84,7 +68,7 @@ export const updateOrganizationMember = async (
 
   if (
     input.membershipStatus !== undefined &&
-    !can(signedInMember.role, statusPermissions[input.membershipStatus])
+    !can(role, statusPermissions[input.membershipStatus])
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -145,22 +129,11 @@ export const inviteOrganizationMember = async (
   },
   signedInUserId: string,
   activeOrganizationId: string,
+  role: OrganizationRole,
 ) => {
   const email = normalizeEmail(input.email);
 
-  const inviterMembership = await findOrganizationMember({
-    organizationId: activeOrganizationId,
-    userId: signedInUserId,
-  });
-
-  if (!inviterMembership) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You are not a member of this organization",
-    });
-  }
-
-  if (!can(inviterMembership.role, PERMISSIONS.MEMBER_INVITE)) {
+  if (!can(role, PERMISSIONS.MEMBER_INVITE)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You do not have permission to invite members",

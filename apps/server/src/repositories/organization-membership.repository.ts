@@ -52,3 +52,15 @@ export const findOrganizationMember = (
     },
   });
 };
+
+export const getMembership = (userId: string, organizationId: string) =>
+  prisma.organizationMember.findFirst({
+    where: {
+      userId,
+      organizationId,
+      status: "ACTIVE",
+      user: { status: "ACTIVE" },
+      organization: { status: "ACTIVE" },
+    },
+    include: { organization: true },
+  });

@@ -1,4 +1,4 @@
-import { protectedProcedure, publicProcedure, router } from "../trpc.js";
+import { protectedProcedure, publicProcedure, router, tenantProcedure } from "../trpc.js";
 import {
   changeOrganizationSchema,
   inviteMemberSchema,
@@ -22,8 +22,8 @@ export const organizationRouter = router({
     listUserOrganizations(ctx.user.id),
   ),
 
-  getActive: protectedProcedure.query(({ ctx }) =>
-    findOne(ctx.user.id, ctx.user.organizationId),
+  getActive: tenantProcedure.query(({ ctx }) =>
+    findOne(ctx.organizationId, ctx.role),
   ),
 
   changeOrganization: protectedProcedure
@@ -38,14 +38,15 @@ export const organizationRouter = router({
       return selectOrganization(input, ctx.user?.id);
     }),
 
-  inviteMember: protectedProcedure
+  inviteMember: tenantProcedure
     .input(inviteMemberSchema)
     .mutation(({ ctx, input }) => {
       // TODO: Send the raw invitation token in an invitation URL via email.
       return inviteOrganizationMember(
         input,
         ctx.user.id,
-        ctx.user.organizationId,
+        ctx.organizationId,
+        ctx.role,
       );
     }),
 
@@ -55,9 +56,9 @@ export const organizationRouter = router({
       respondToInvitation(input, ctx.user?.id),
     ),
 
-  updateMember: protectedProcedure
+  updateMember: tenantProcedure
     .input(updateOrganizationMemberSchema)
     .mutation(({ ctx, input }) =>
-      updateOrganizationMember(input, ctx.user.id, ctx.user.organizationId),
+      updateOrganizationMember(input, ctx.user.id, ctx.organizationId, ctx.role),
     ),
 });
