@@ -1,8 +1,8 @@
 import { tenantProcedure, router } from "../trpc.js";
-import { sendMessageInputSchema } from "../schemas/chat.schema.js";
-import { sendMessage } from "../services/chat.service.js";
+import { sendMessageInputSchema } from "../schemas/conversation.schema.js";
+import { sendMessage } from "../services/conversation.service.js";
 
-export const chatRouter = router({
+export const conversationRouter = router({
   sendMessage: tenantProcedure
     .input(sendMessageInputSchema)
     .mutation(({ input, ctx }) =>

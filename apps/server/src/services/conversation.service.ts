@@ -1,9 +1,9 @@
-import type { SendMessageInputType } from "../types/chat.type.js";
+import type { SendMessageInputType } from "../types/conversation.type.js";
 import {
   createConversation,
   createMessage,
   findConversationById,
-} from "../repositories/chat.repository.js";
+} from "../repositories/conversation.repository.js";
 import { TRPCError } from "@trpc/server";
 
 export const sendMessage = async (
