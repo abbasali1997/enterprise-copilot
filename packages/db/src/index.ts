@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "./generated/prisma/client.js";
+import { type Prisma, PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 // packages/db/src/index.ts
@@ -12,3 +12,5 @@ const adapter = new PrismaPg({
 export const prisma: PrismaClient = new PrismaClient({
   adapter,
 });
+
+export type DbClient = Prisma.TransactionClient | typeof prisma;

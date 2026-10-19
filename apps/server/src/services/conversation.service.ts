@@ -1,10 +1,38 @@
-import type { SendMessageInputType } from "../types/conversation.type.js";
+import type {
+  RenameConversationInputType,
+  SendMessageInputType,
+} from "../types/conversation.type.js";
 import {
   createConversation,
   createMessage,
   findConversationById,
+  findUserConversation,
+  renameUserConversation,
 } from "../repositories/conversation.repository.js";
 import { TRPCError } from "@trpc/server";
+import { Prisma, prisma } from "@enterprise/db";
+
+export const getConversationList = async (
+  signedInUserId: string,
+  organizationId: string,
+) =>
+  prisma.conversation.findMany({
+    where: {
+      organizationId,
+      userId: signedInUserId,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      title: true,
+      lastMessageAt: true,
+    },
+    orderBy: {
+      lastMessageAt: {
+        sort: "asc",
+      },
+    },
+  });
 
 export const sendMessage = async (
   input: SendMessageInputType,
@@ -48,4 +76,49 @@ const createFallbackTitle = (message: string) => {
   }
 
   return `${trimmed.slice(0, 47)}...`;
+};
+
+export const getConversation = async (
+  conversationId: string,
+  signedInUserId: string,
+  organizationId: string,
+) => {
+  const conversation = await findUserConversation(
+    conversationId,
+    signedInUserId,
+    organizationId,
+  );
+  if (!conversation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Conversation not found",
+    });
+  }
+  return conversation;
+};
+
+export const renameConversation = async (
+  input: RenameConversationInputType,
+  signedInUserId: string,
+  organizationId: string,
+) => {
+  try {
+    return await renameUserConversation(
+      input.conversationId,
+      input.title,
+      signedInUserId,
+      organizationId,
+    );
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Conversation not found",
+      });
+    }
+    throw error;
+  }
 };

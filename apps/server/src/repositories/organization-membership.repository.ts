@@ -1,6 +1,4 @@
-import { type Prisma, prisma } from "@enterprise/db";
-
-type DbClient = Prisma.TransactionClient | typeof prisma;
+import { type DbClient, type Prisma, prisma } from "@enterprise/db";
 
 export const findOne = <T extends Prisma.OrganizationMemberFindFirstArgs>(
   args: Prisma.SelectSubset<T, Prisma.OrganizationMemberFindFirstArgs>,
