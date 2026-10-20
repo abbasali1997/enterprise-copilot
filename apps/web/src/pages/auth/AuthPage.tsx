@@ -29,7 +29,7 @@ const AuthPage = () => {
     setIsRedirecting(true);
     localStorage.setItem("token", data.accessToken);
     value?.setUser({ ...data.user, organization: data.workspace });
-    setTimeout(() => navigate("/"), 2000);
+    setTimeout(() => navigate("/home", { replace: true }), 2000);
   };
 
   const selectOrganization = useMutation(

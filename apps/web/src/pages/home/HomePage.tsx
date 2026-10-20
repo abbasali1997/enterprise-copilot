@@ -5,11 +5,11 @@ import "./HomePage.css";
 
 function HomePage() {
   return (
-    <div className="w-full h-screen grid grid-cols-9 overflow-hidden">
+    <div className="w-full h-screen grid grid-cols-10 overflow-hidden">
       <div className="col-span-2 min-h-0 min-w-0">
         <AppSidebar />
       </div>
-      <main id="bg-area" className="col-span-7 w-full h-full">
+      <main id="bg-area" className="col-span-8 w-full h-full">
         <div
           id="bg-container"
           className="w-full h-full flex min-h-0 min-w-0 flex-col"

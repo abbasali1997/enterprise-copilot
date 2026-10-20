@@ -1,6 +1,7 @@
 import { tenantProcedure, router } from "../trpc.js";
 import {
   getConversationInputSchema,
+  onGenerationInputSchema,
   renameConversationInputSchema,
   sendMessageInputSchema,
 } from "../schemas/conversation.schema.js";
@@ -33,4 +34,10 @@ export const conversationRouter = router({
   list: tenantProcedure.query(({ ctx }) =>
     getConversationList(ctx.user.id, ctx.user.organizationId),
   ),
+
+  onGeneration: tenantProcedure
+    .input(onGenerationInputSchema)
+    .subscription(async function* ({ ctx, input }) {
+      // yield typed generation events
+    }),
 });

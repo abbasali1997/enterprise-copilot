@@ -13,3 +13,5 @@ export const getConversationInputSchema = z.object({
 export const renameConversationInputSchema = getConversationInputSchema.extend({
   title: z.string().trim().min(1).max(200),
 });
+
+export const onGenerationInputSchema = z.object({ generationId: z.string() });

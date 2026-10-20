@@ -36,9 +36,7 @@ const SidebarItem = ({ children, icon, active = false }: SidebarItemProps) => {
       `}
     >
       <span
-        className={
-          active ? "text-indigo-500 font-bold text-lg" : "font-bold text-lg"
-        }
+        className={active ? "text-indigo-500 font-bold text-lg" : "text-lg"}
         style={!active ? { cursor: "pointer" } : {}}
       >
         <FontAwesomeIcon icon={icon} className="mr-2" />
@@ -62,9 +60,9 @@ const AppSidebar = () => {
       id="side-bar"
       className="w-full h-full flex shrink-0 flex-col border-r bg-white"
     >
-      <div className="p-4 cursor-pointer" onClick={() => navigate("/")}>
+      <div className="p-4 cursor-pointer" onClick={() => navigate("/home")}>
         <img
-          className="w-52"
+          className="w-40"
           src="/Enterprise-Copilot-Logo.png"
           alt="Company logo"
         />
@@ -114,7 +112,7 @@ const AppSidebar = () => {
             </summary>
             <div className="absolute bottom-full inset-x-0 z-50 mb-2 rounded-lg border bg-white p-2 shadow-lg">
               <Link
-                to="/"
+                to="/home"
                 className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 Dashboard
