@@ -236,6 +236,9 @@ importers:
       '@enterprise/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@enterprise/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@trpc/server':
         specifier: ^11.19.0
         version: 11.19.0(typescript@7.0.2)
