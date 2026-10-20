@@ -1,32 +1,69 @@
 @import "tailwindcss";
 
-#bg-area {
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+html[data-theme="dark"] #bg-area {
+    position: relative;
+    overflow: hidden;
+
     background: radial-gradient(
-            circle at 10% 5%,
-            rgba(94, 234, 212, 0.65),
-            transparent 35%
+            70% 55% at 10% 0%,
+            rgba(34, 211, 238, 0.12),
+            transparent 70%
     ),
     radial-gradient(
-            circle at 55% 40%,
-            rgba(244, 214, 250, 0.85),
-            transparent 42%
+            65% 50% at 90% 10%,
+            rgba(99, 102, 241, 0.16),
+            transparent 72%
     ),
     radial-gradient(
-            circle at 100% 50%,
-            rgba(124, 92, 246, 0.8),
-            transparent 48%
+            80% 65% at 65% 100%,
+            rgba(124, 58, 237, 0.12),
+            transparent 72%
     ),
-    linear-gradient(
-            135deg,
-            #c8f4ec 0%,
-            #d9e8f7 35%,
-            #eadcf8 62%,
-            #9f83fa 100%
+    linear-gradient(135deg, #071426 0%, #050a1e 45%, #0a0d2b 100%);
+}
+
+html[data-theme="dark"] #bg-area::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+
+    background-size: 64px 64px;
+
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent 80%);
+
+    pointer-events: none;
+}
+
+html[data-theme="dark"] #bg-area::after {
+    content: "";
+    position: absolute;
+
+    width: 70%;
+    height: 45%;
+
+    left: 20%;
+    top: 15%;
+
+    background: linear-gradient(
+            110deg,
+            rgba(34, 211, 238, 0.08),
+            rgba(99, 102, 241, 0.12),
+            rgba(139, 92, 246, 0.1)
     );
+
+    filter: blur(90px);
+    transform: rotate(-8deg);
+
+    pointer-events: none;
 }
 
 #bg-container {
-    background-image: url("/bg-pattern.png");
+    /*background-image: url("/bg-pattern-new.jpg");*/
     background-size: cover;
 }
 
@@ -40,7 +77,8 @@
     padding: 12px 28px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .rainbow-btn:hover {
@@ -56,4 +94,33 @@
 .rainbow-btn:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+html[data-theme="light"] #bg-area {
+    position: relative;
+    background: radial-gradient(
+            circle at 10% 5%,
+            rgba(94, 234, 212, 0.65),
+            transparent 35%
+    ),
+    radial-gradient(
+            circle at 55% 40%,
+            rgba(244, 214, 250, 0.85),
+            transparent 42%
+    ),
+    radial-gradient(
+            circle at 100% 50%,
+            rgba(124, 92, 246, 0.8),
+            transparent 48%
+    ),
+    linear-gradient(135deg, #c8f4ec 0%, #d9e8f7 35%, #eadcf8 62%, #9f83fa 100%);
+}
+
+html[data-theme="light"] #bg-container {
+    background-image: url("/bg-pattern.png");
+}
+
+#bg-area > * {
+    position: relative;
+    z-index: 1;
 }

@@ -20,9 +20,9 @@ function Login({
   isRedirecting,
 }: LoginProps) {
   return (
-    <div className=" w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
+    <div className=" w-full max-w-md rounded-2xl border border-indigo-950 bg-slate-950 text-slate-200 p-8 shadow-sm">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+        <h1 className="text-2xl font-semibold tracking-tight ">
           Sign In To Your Organization
         </h1>
 
@@ -33,7 +33,7 @@ function Login({
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-slate-200">
             Email
           </label>
 
@@ -53,14 +53,14 @@ function Login({
           <div className="flex items-center justify-between">
             <label
               htmlFor="password"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-slate-200"
             >
               Password
             </label>
 
             <button
               type="button"
-              className="text-xs font-medium text-gray-500 hover:text-gray-900"
+              className="text-xs font-medium text-slate-400 hover:text-gray-900"
             >
               Forgot password?
             </button>
@@ -98,20 +98,12 @@ function Login({
           disabled={isPending || isRedirecting}
           type="submit"
           className="
+              rainbow-btn
+              mt-3
               w-full
               rounded-lg
               px-4
               py-2.5
-              text-sm
-              font-medium
-              text-white
-              transition
-              bg-indigo-500
-              hover:bg-gray-900
-              focus:outline-none
-              focus:ring-2
-              focus:ring-gray-900
-              focus:ring-offset-2
               disabled:bg-red-900
             "
           style={{ cursor: "pointer" }}

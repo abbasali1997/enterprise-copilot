@@ -51,7 +51,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
 
         <FontAwesomeIcon
           icon={faSearch}
-          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500 dark:text-slate-400"
         />
 
         <input
@@ -60,11 +60,11 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search In Chat"
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-md text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="w-full rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-slate-900/80 py-2.5 pl-10 pr-3 text-md text-gray-900 dark:text-slate-100 outline-none transition placeholder:text-gray-500 dark:placeholder:text-slate-400 focus:border-indigo-400 dark:focus:border-cyan-400/60 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-cyan-400/15"
         />
       </form>
 
-      <div className="flex min-w-0 max-w-[45%] shrink-0 items-center gap-5 bg-white px-10 py-1 rounded-4xl shadow-lg">
+      <div className="flex min-w-0 max-w-[45%] shrink-0 items-center gap-5 border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/80 px-10 py-1 rounded-4xl shadow-lg">
         {logoUrl && logoUrl !== failedLogo ? (
           <img
             src={logoUrl}
@@ -75,15 +75,15 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
         ) : (
           <span
             aria-hidden="true"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-semibold text-indigo-700"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-400/20 text-sm font-semibold text-indigo-700 dark:text-indigo-200"
           >
             {workspace?.name.slice(0, 2).toUpperCase() || "WS"}
           </span>
         )}
         <div className="min-w-0 text-right">
-          <p className="text-xs text-gray-500">Workspace</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Workspace</p>
           <p
-            className="truncate text-sm font-semibold text-gray-900"
+            className="truncate text-sm font-semibold text-gray-900 dark:text-slate-100"
             title={workspace?.name}
           >
             {workspace?.name ?? "No workspace selected"}
@@ -106,7 +106,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
               aria-expanded={menuOpen}
               aria-controls="workspace-options"
               onClick={() => setMenuOpen((open) => !open)}
-              className="relative z-50 flex h-8 w-8 items-center justify-center rounded-full text-xl font-semibold text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-indigo-500"
+              className="relative z-50 flex h-8 w-8 items-center justify-center rounded-full text-xl font-semibold text-gray-500 dark:text-slate-400 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-950 dark:hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300"
             >
               <FontAwesomeIcon icon={faEllipsisVertical} />
             </button>
@@ -122,7 +122,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                 <ul
                   id="workspace-options"
                   aria-label="Workspace options"
-                  className="absolute right-0 top-full z-50 mt-3 w-30 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
+                  className="absolute right-0 top-full z-50 mt-3 w-30 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900 p-1.5 shadow-lg"
                 >
                   {canView ? (
                     <li>
@@ -132,7 +132,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                           setMenuOpen(false);
                           onManage();
                         }}
-                        className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-sm text-right text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
+                        className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-sm text-right text-gray-600 dark:text-slate-300 transition hover:bg-indigo-50 dark:hover:bg-indigo-400/15 hover:text-indigo-700 dark:hover:text-indigo-200 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300"
                       >
                         <FontAwesomeIcon
                           icon={faUserGear}
@@ -151,7 +151,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
                         if (onChangeWorkspace) onChangeWorkspace();
                         else navigate("/workspaces/change");
                       }}
-                      className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-right text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500"
+                      className="flex justify-around items-center w-full rounded-lg px-3 py-2 text-right text-sm text-gray-600 dark:text-slate-300 transition hover:bg-indigo-50 dark:hover:bg-indigo-400/15 hover:text-indigo-700 dark:hover:text-indigo-200 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300"
                     >
                       <FontAwesomeIcon
                         icon={faArrowsRotate}

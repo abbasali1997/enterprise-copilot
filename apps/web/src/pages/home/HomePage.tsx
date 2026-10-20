@@ -5,7 +5,7 @@ import "./HomePage.css";
 
 function HomePage() {
   return (
-    <div className="w-full h-screen grid grid-cols-10 overflow-hidden">
+    <div className="w-full h-screen grid grid-cols-10 overflow-hidden bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       <div className="col-span-2 min-h-0 min-w-0">
         <AppSidebar />
       </div>

@@ -1,3 +1,16 @@
 #side-bar {
-    background-image: linear-gradient(-225deg, #E3FDF5 0%, #FFE6FA 100%);
+  background-image: linear-gradient(-225deg, #e3fdf5 0%, #ffe6fa 100%);
+}
+
+html[data-theme="dark"] #side-bar {
+  background: linear-gradient(180deg, #09162d 0%, #080d22 55%, #120e30 100%);
+}
+
+html[data-theme="dark"] #side-bar .rainbow-btn {
+  background: linear-gradient(110deg, #6d28d9, #4338ca 55%, #0e7490);
+  box-shadow: 0 4px 20px rgb(67 56 202 / 25%);
+}
+
+html[data-theme="dark"] #side-bar .rainbow-btn:hover {
+  box-shadow: 0 6px 24px rgb(67 56 202 / 40%);
 }

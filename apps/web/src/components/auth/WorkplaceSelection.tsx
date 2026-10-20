@@ -36,11 +36,11 @@ function WorkplaceSelection({
   };
 
   return (
-    <section className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
-      <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+    <section className="w-full max-w-md rounded-2xl border border-indigo-950 bg-slate-950 text-slate-200 p-8 shadow-sm">
+      <h1 className="text-2xl font-semibold tracking-tight text-center">
         Select your organization
       </h1>
-      <p className="mt-2 text-sm text-gray-500">
+      <p className="mt-2 text-sm text-slate-400 text-center">
         Choose a workspace to continue.
       </p>
       <form onSubmit={handleSubmit}>
@@ -52,7 +52,7 @@ function WorkplaceSelection({
           {workspaceList.map((workspace) => (
             <label
               key={workspace.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition focus-within:ring-2 focus-within:ring-indigo-500 ${selectedId === workspace.id ? "border-indigo-500 " : "border-gray-200 bg-white hover:bg-gray-50"} ${busy ? "cursor-wait opacity-70" : ""}`}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition focus-within:ring-2 focus-within:ring-indigo-500 ${selectedId === workspace.id ? "border-indigo-950 " : "border-gray-900 bg-gray-900 hover:bg-gray-950"} ${busy ? "cursor-wait opacity-70" : ""}`}
             >
               <input
                 type="radio"
@@ -68,10 +68,10 @@ function WorkplaceSelection({
                 alt=""
               />
               <span className="min-w-0">
-                <span className="block truncate text-lg font-semibold text-gray-900">
+                <span className="block truncate text-lg font-semibold text-slate-200">
                   {workspace.name}
                 </span>
-                <span className="block text-xs text-gray-500">
+                <span className="block text-xs text-slate-400">
                   {workspace.role.toLowerCase()}
                 </span>
               </span>
