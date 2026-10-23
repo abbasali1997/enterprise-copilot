@@ -44,7 +44,10 @@ function ChangeWorkspacePage() {
     );
   if (!auth?.user) return <Navigate to="/login" replace />;
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div
+      id="bg-area"
+      className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
+    >
       {workspaces.isPending ? (
         <p role="status">Loading workspaces...</p>
       ) : workspaces.isError ? (

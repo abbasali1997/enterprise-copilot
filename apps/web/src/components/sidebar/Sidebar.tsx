@@ -7,9 +7,12 @@ import {
   faBrain,
   type IconDefinition,
   faPlus,
+  faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { ThemeContext, ThemeToggle } from "@/contexts/themeContext.tsx";
 import "./sidebar.css";
+import { useTRPC } from "@/lib/trpc.ts";
+import { useQuery } from "@tanstack/react-query";
 
 type SidebarItemProps = {
   children: React.ReactNode;
@@ -54,6 +57,12 @@ const SidebarItem = ({ children, icon, active = false }: SidebarItemProps) => {
 };
 
 const AppSidebar = () => {
+  const trpc = useTRPC();
+  const {
+    data: conversationList = [],
+    isPending,
+    isError,
+  } = useQuery(trpc.conversation.list.queryOptions());
   const auth = useContext(AuthContext);
   const theme = useContext(ThemeContext)?.theme;
   const navigate = useNavigate();
@@ -83,9 +92,42 @@ const AppSidebar = () => {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-3">
-        <SidebarItem active icon={faComments}>
-          Conversations
-        </SidebarItem>
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md bg-gray-100 px-3 py-2 text-lg font-medium text-indigo-500 dark:bg-indigo-400/15 dark:text-cyan-300 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300 [&::-webkit-details-marker]:hidden">
+            <FontAwesomeIcon icon={faComments} />
+            <span className="min-w-0 flex-1">Conversations</span>
+            <FontAwesomeIcon
+              icon={faChevronRight}
+              className="text-xs transition-transform group-open:rotate-90"
+            />
+          </summary>
+          <ul
+            aria-label="Conversations"
+            className="mt-1 max-h-80 space-y-1 overflow-y-auto pl-8 pr-2 text-base text-gray-600 dark:text-slate-300"
+          >
+            {isPending ? (
+              <li role="status" className="py-2">
+                Loading conversations?
+              </li>
+            ) : isError ? (
+              <li role="alert" className="py-2">
+                Could not load conversations.
+              </li>
+            ) : conversationList.length === 0 ? (
+              <li className="py-2">No conversations yet.</li>
+            ) : (
+              conversationList.map((conversation) => (
+                <li
+                  key={conversation.id}
+                  title={conversation.title}
+                  className="cursor-pointer truncate rounded-md px-2 py-2 hover:text-indigo-300"
+                >
+                  {conversation.title}
+                </li>
+              ))
+            )}
+          </ul>
+        </details>
 
         <SidebarItem icon={faBrain}>Knowledge</SidebarItem>
       </nav>

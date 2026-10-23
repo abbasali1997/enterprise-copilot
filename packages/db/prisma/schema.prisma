@@ -72,6 +72,13 @@ enum MessageStatus {
   CANCELLED
 }
 
+enum LlmRequestStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -184,4 +191,32 @@ model Message {
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LlmRequest {
+  id String @id
+
+  conversationId String?
+  messageId      String?
+
+  provider String
+  model    String
+
+  providerResponseId String?
+
+  status LlmRequestStatus
+
+  inputTokens  Int?
+  outputTokens Int?
+  totalTokens  Int?
+
+  latencyMs Int?
+
+  finishReason String?
+
+  errorCode    String?
+  errorMessage String?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
 }

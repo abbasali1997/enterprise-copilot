@@ -3,6 +3,23 @@ import type { LLMFinishReason, LLMMessage, LLMUsage } from "../types.js";
 import type { LLMProvider, LLMProviderInput } from "../provider.js";
 import { LLMProviderError } from "../errors.js";
 
+export const OPENAI_MODELS = [
+  {
+    provider: "openai",
+    model: "gpt-6-luna",
+    name: "GPT-6 Luna",
+    tier: "ENTRY",
+    enabled: true,
+  },
+  {
+    provider: "openai",
+    model: "gpt-5.6-luna",
+    name: "GPT-5.6 Luna",
+    tier: "ENTRY",
+    enabled: true,
+  },
+] as const;
+
 export class OpenAIProvider implements LLMProvider {
   readonly name = "openai" as const;
 

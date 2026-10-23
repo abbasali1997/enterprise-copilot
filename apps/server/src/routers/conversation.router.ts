@@ -1,3 +1,4 @@
+import { GEMINI_MODELS, OPENAI_MODELS } from "@enterprise/llm";
 import { tenantProcedure, router } from "../trpc.js";
 import {
   getConversationInputSchema,
@@ -13,6 +14,10 @@ import {
 } from "../services/conversation.service.js";
 
 export const conversationRouter = router({
+  models: tenantProcedure.query(() =>
+    [...OPENAI_MODELS, ...GEMINI_MODELS].filter((model) => model.enabled),
+  ),
+
   get: tenantProcedure
     .input(getConversationInputSchema)
     .query(({ input, ctx }) =>
