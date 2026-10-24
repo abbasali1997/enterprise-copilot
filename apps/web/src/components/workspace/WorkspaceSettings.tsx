@@ -16,16 +16,16 @@ function WorkspaceSettings({
       aria-label="Workspace settings"
       className="flex h-full min-h-0 min-w-0 flex-col gap-5 overflow-y-auto lg:grid lg:grid-cols-9 lg:grid-rows-12 lg:overflow-hidden"
     >
-      <div className="shrink-0 rounded-xl border border-gray-200 bg-white p-5 lg:col-span-6 lg:row-span-8 lg:min-h-0 lg:overflow-y-auto">
+      <div className="shrink-0 rounded-xl border border-gray-200 bg-white dark:border-white/10 p-5 lg:col-span-6 lg:row-span-8 lg:min-h-0 lg:overflow-y-auto dark:bg-slate-800 dark:text-slate-100">
         <OrganizationProfile
           organizationName={organizationName}
           logoUrl={logoUrl}
         />
       </div>
-      <div className="min-h-40 shrink-0 rounded-xl border border-gray-200 bg-white p-5 lg:col-span-3 lg:col-start-7 lg:row-span-12 lg:row-start-1 lg:min-h-0 lg:overflow-y-auto">
+      <div className="min-h-40 shrink-0 rounded-xl border border-gray-200 bg-white dark:border-white/10 p-5 lg:col-span-3 lg:col-start-7 lg:row-span-12 lg:row-start-1 lg:min-h-0 lg:overflow-y-auto dark:bg-slate-800 dark:text-slate-100">
         <AIPreferences />
       </div>
-      <div className="shrink-0 rounded-xl bg-red-100 p-5 lg:col-span-6 lg:row-span-4 lg:row-start-9 lg:min-h-0 lg:overflow-y-auto">
+      <div className="shrink-0 rounded-xl bg-red-100 dark:bg-red-950/60 p-5 lg:col-span-6 lg:row-span-4 lg:row-start-9 lg:min-h-0 lg:overflow-y-auto">
         <DeleteWorkspace />
       </div>
     </section>

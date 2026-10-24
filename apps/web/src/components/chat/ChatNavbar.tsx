@@ -70,7 +70,7 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
             src={logoUrl}
             alt={`${workspace.name} logo`}
             onError={() => setFailedLogo(logoUrl)}
-            className="h-10 w-10 shrink-0 rounded-xl bg-white object-contain p-1"
+            className="h-10 w-10 shrink-0 rounded-xl object-contain p-1"
           />
         ) : (
           <span

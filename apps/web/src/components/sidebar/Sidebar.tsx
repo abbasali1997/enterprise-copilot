@@ -85,7 +85,7 @@ const AppSidebar = () => {
         />
       </div>
 
-      <div className="p-4">
+      <div className="px-4 mt-5 mb-8">
         <Link to="/home">
           <button className="rainbow-btn focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300 cursor-pointer w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500">
             <FontAwesomeIcon icon={faPlus} /> New Chat

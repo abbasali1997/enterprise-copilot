@@ -3,7 +3,7 @@ type Role = "USER" | "ASSISTANT" | "SYSTEM" | "TOOL";
 function MessageBubble(props: { role: Role; content: string }) {
   const messageBgColor =
     props.role === "USER"
-      ? "bg-indigo-500/85 text-slate-100 text-right"
+      ? "bg-indigo-500/85 text-slate-100 text-right dark:bg-cyan-600/85"
       : "dark:bg-indigo-950 dark:text-slate-100 bg-slate-200/85 text-black text-left";
 
   return (

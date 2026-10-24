@@ -78,12 +78,12 @@ function WorkspaceMembers({
   return (
     <section
       aria-label="Workspace members"
-      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-5"
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-white p-5 dark:bg-slate-800 dark:text-slate-100"
     >
       <div className="mb-10 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-bold text-lg">Members ({members.length})</h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Manage who can access this workspace and their roles
           </p>
         </div>
@@ -104,7 +104,7 @@ function WorkspaceMembers({
           <caption className="sr-only">
             Workspace members and their roles, status, and join dates
           </caption>
-          <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+          <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-slate-900 dark:text-slate-100">
             <tr>
               {["Name", "Email", "Role", "Status", "Joined At", "Actions"].map(
                 (column) => (
@@ -119,14 +119,17 @@ function WorkspaceMembers({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:bg-slate-900 dark:divide-slate-700">
             {members.map((member) => {
               const joinedAt = new Date(member.joinedAt);
               return (
-                <tr key={member.id} className="transition hover:bg-gray-50/70">
+                <tr
+                  key={member.id}
+                  className="transition hover:bg-gray-50/70 dark:hover:bg-slate-800"
+                >
                   <th
                     scope="row"
-                    className="min-w-[180px] px-5 py-4 font-medium text-gray-900"
+                    className="min-w-[180px] px-5 py-4 font-medium text-gray-900 dark:text-slate-100"
                   >
                     {member.user.name}{" "}
                     {member.role === "OWNER" ? (
@@ -136,7 +139,7 @@ function WorkspaceMembers({
                       />
                     ) : null}
                   </th>
-                  <td className="min-w-[260px] whitespace-nowrap px-5 py-4 text-gray-600">
+                  <td className="min-w-[260px] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
                     {member.user.email}
                   </td>
                   <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
@@ -153,7 +156,7 @@ function WorkspaceMembers({
                       {member.status.toLowerCase()}
                     </span>
                   </td>
-                  <td className="min-w-[160px] whitespace-nowrap px-5 py-4 text-gray-600">
+                  <td className="min-w-[160px] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
                     {Number.isNaN(joinedAt.getTime()) ? (
                       "—"
                     ) : (
@@ -169,7 +172,7 @@ function WorkspaceMembers({
                         onClick={() => onEdit?.(member)}
                         disabled={!canUpdate || member.status === "REMOVED"}
                         aria-label={`Edit ${member.user.name}`}
-                        className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-indigo-200"
                       >
                         <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
@@ -181,7 +184,7 @@ function WorkspaceMembers({
                             onClick={() => onActivate?.(member)}
                             disabled={!canActivate}
                             aria-label={`Activate access for ${member.user.name}`}
-                            className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-green-200"
                           >
                             <FontAwesomeIcon
                               icon={faUserCheck}
@@ -198,7 +201,7 @@ function WorkspaceMembers({
                               member.status === "REMOVED"
                             }
                             aria-label={`Manage access for ${member.user.name}`}
-                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-red-200"
                           >
                             <FontAwesomeIcon icon={faTrash} className="mr-2" />
                             Manage Access

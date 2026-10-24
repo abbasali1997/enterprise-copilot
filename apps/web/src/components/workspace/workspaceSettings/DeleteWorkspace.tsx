@@ -6,14 +6,14 @@ function DeleteWorkspace() {
     <>
       <div className="flex min-w-0 flex-col justify-around gap-4 h-full">
         <div>
-          <p className="text-lg text-red-700 font-bold">Delete Workspace</p>
-          <p className="text-md text-gray-600">
+          <p className="text-lg text-red-700 dark:text-red-300 font-bold">Delete Workspace</p>
+          <p className="text-md text-gray-600 dark:text-slate-300">
             Permanently delete this workspace and all its data. This action can
             not be undone.
           </p>
         </div>
 
-        <button className="cursor-pointer text-xl bg-transparent border border-red-700 hover:bg-gray-900 rounded-lg px-4 py-2.5 text-center text-sm font-medium text-red-700 transition hover:text-white hover:bg-red-700">
+        <button className="cursor-pointer text-xl bg-transparent border border-red-700 dark:border-red-400/60 rounded-lg px-4 py-2.5 text-center text-sm font-medium text-red-700 dark:text-red-300 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:focus-visible:outline-red-400 hover:text-white dark:hover:text-white hover:bg-red-700 dark:hover:bg-red-600">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
             className="text-2xl mr-2"
