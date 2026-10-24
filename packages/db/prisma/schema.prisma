@@ -220,3 +220,19 @@ model LlmRequest {
   createdAt   DateTime  @default(now())
   completedAt DateTime?
 }
+
+enum AttachmentType {
+  BINARY
+  IMAGE
+  DOCUMENT
+}
+
+model Attachment {
+  id       String         @id @default(uuid())
+  key      String
+  name     String
+  type     AttachmentType
+  mimeType String
+  fileSize Int
+  source   String
+}
