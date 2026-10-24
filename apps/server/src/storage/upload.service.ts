@@ -13,16 +13,12 @@ import type { UploadInput, UploadResult } from "./storage.types.js";
 import { TRPCError } from "@trpc/server";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-const BUCKET = process.env.S3_BUCKET?.trim();
+export const BUCKET = process.env.S3_BUCKET?.trim() ?? "enterprise-copilot";
 
 /** Uploads to the configured bucket; an existing object at the same key is replaced. */
 export const uploadToStorage = async (
   input: UploadInput,
 ): Promise<UploadResult> => {
-  if (!BUCKET) {
-    throw new Error("S3_BUCKET must be configured before uploading");
-  }
-
   if (!input.key.trim() || Buffer.byteLength(input.key, "utf8") > 1024) {
     throw new Error("Upload key must contain 1 to 1024 UTF-8 bytes");
   }
@@ -100,6 +96,7 @@ export const deleteFromStorage = async (input: {
   const location = /^s3:\/\/([^/]+)\/([\s\S]+)$/.exec(attachment.source);
   const bucket = location?.[1];
   const key = attachment.key;
+
   if (!bucket || !key || !key.trim() || Buffer.byteLength(key, "utf8") > 1024) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
