@@ -38,7 +38,7 @@ function ChangeWorkspacePage() {
 
   if (auth?.isLoading)
     return (
-      <p role="status" className="p-8">
+      <p role="status" className="min-h-screen bg-gray-50 p-8 text-gray-600 dark:bg-slate-950 dark:text-slate-300">
         Checking your session...
       </p>
     );
@@ -46,17 +46,17 @@ function ChangeWorkspacePage() {
   return (
     <div
       id="bg-area"
-      className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
+      className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 py-20 text-gray-900 dark:bg-slate-950 dark:text-slate-100"
     >
       {workspaces.isPending ? (
         <p role="status">Loading workspaces...</p>
       ) : workspaces.isError ? (
-        <div role="alert" className="rounded-xl bg-white p-6">
+        <div role="alert" className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/15 dark:bg-slate-900">
           <p>{workspaces.error.message}</p>
           <button
             type="button"
             onClick={() => void workspaces.refetch()}
-            className="mt-4 text-indigo-600"
+            className="mt-4 text-indigo-600 dark:text-cyan-300"
           >
             Try again
           </button>

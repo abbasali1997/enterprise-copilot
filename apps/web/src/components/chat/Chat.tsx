@@ -14,12 +14,18 @@ type MessageType = {
   errorMessage: string | null;
 };
 
-const ChatArea = () => {
-  const [selectedModelId, setSelectedModelId] = useState("gemini-3.8-flash");
-  const [messages, setMessages] = useState<MessageType[]>([]);
+const ConversationChat = ({
+  conversationId,
+}: {
+  conversationId: string | undefined;
+}) => {
+  const [selectedModelId, setSelectedModelId] = useState(
+    "gemini-3.5-flash-lite",
+  );
+  const [localMessages, setMessages] = useState<MessageType[] | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const conversationIdRef = useRef<string | undefined>(undefined);
+  const conversationIdRef = useRef<string | undefined>(conversationId);
   // to ensure another message can not be sent while one's response is being generated
   const sendingRef = useRef(false);
 
@@ -27,6 +33,30 @@ const ChatArea = () => {
     queryKey: ["conversation", "models"],
     queryFn: () => trpcClient.conversation.models.query(),
   });
+
+  const { data: currentConversation } = useQuery<{ messages: MessageType[] }>({
+    queryKey: ["conversation", "get", conversationId],
+    queryFn: async (): Promise<{ messages: MessageType[] }> => {
+      const conversation: { messages: MessageType[] } =
+        await trpcClient.conversation.get.query({
+          conversationId: conversationId ?? "",
+        });
+      return {
+        messages: conversation.messages.map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+          status: message.status,
+          model: message.model,
+          errorMessage: message.errorMessage,
+        })),
+      };
+    },
+    enabled: !!conversationId,
+  });
+
+  const messages = localMessages ?? currentConversation?.messages ?? [];
+
   const selectedModel =
     models.find((model) => model.model === selectedModelId) ?? models[0];
 
@@ -42,20 +72,23 @@ const ChatArea = () => {
       }),
     onMutate: (input) => {
       const temporaryId = crypto.randomUUID();
-      setMessages((current) => [...current, {
-        id: temporaryId,
-        role: "USER",
-        content: input.content,
-        status: "PENDING",
-        model: null,
-        errorMessage: null,
-      }]);
+      setMessages((current) => [
+        ...(current ?? messages),
+        {
+          id: temporaryId,
+          role: "USER",
+          content: input.content,
+          status: "PENDING",
+          model: null,
+          errorMessage: null,
+        },
+      ]);
       return { temporaryId };
     },
     onSuccess: (data, _input, context) => {
       conversationIdRef.current = data.message.conversationId;
       setMessages((current) => [
-        ...current.map((message) =>
+        ...(current ?? messages).map((message) =>
           message.id === context.temporaryId
             ? {
                 id: data.message.id,
@@ -78,11 +111,13 @@ const ChatArea = () => {
       ]);
     },
     onError: (error, _input, context) => {
-      setMessages((current) => current.map((message) =>
-        message.id === context?.temporaryId
-          ? { ...message, status: "FAILED", errorMessage: error.message }
-          : message,
-      ));
+      setMessages((current) =>
+        (current ?? messages).map((message) =>
+          message.id === context?.temporaryId
+            ? { ...message, status: "FAILED", errorMessage: error.message }
+            : message,
+        ),
+      );
     },
     onSettled: () => {
       sendingRef.current = false;
@@ -127,29 +162,35 @@ const ChatArea = () => {
   };
 
   return (
-    <div className="w-full h-full flex min-w-0 flex-1 flex-col">
+    <div className="w-full h-full flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {messages.length ? (
-        <div className="flex flex-1 my-4">
-          <div className="w-full max-w-3/4 mx-auto flex flex-col justify-end">
+        <div className="my-4 min-h-0 flex-1 overflow-y-auto">
+          <div className="w-full max-w-3/4 mx-auto flex flex-col justify-start">
             {messages.map((message) => (
               <div key={message.id}>
                 <MessageBubble role={message.role} content={message.content} />
                 {message.errorMessage && (
-                  <p role="alert" className="text-right text-sm text-red-600 dark:text-red-400">
+                  <p
+                    role="alert"
+                    className="text-right text-sm text-red-600 dark:text-red-400"
+                  >
                     Failed to send: {message.errorMessage}
                   </p>
                 )}
               </div>
             ))}
             {sendMessage.isPending && (
-              <p role="status" className="my-2 text-sm text-gray-500 dark:text-slate-400">
+              <p
+                role="status"
+                className="my-2 text-sm text-gray-500 dark:text-slate-400"
+              >
                 Generating response?
               </p>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center p-6">
+        <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-2xl text-center">
             <h1 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-slate-100">
               How can I help you?
@@ -162,7 +203,7 @@ const ChatArea = () => {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-3/4 pb-6">
+      <div className="relative mx-auto mt-auto w-full max-w-3/4 shrink-0 pb-6">
         <div className="rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-slate-900/90 p-3 shadow-xl shadow-gray-400 dark:shadow-black/25 focus-within:border-indigo-400 dark:focus-within:border-cyan-400/60 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-cyan-400/15">
           <div className="flex items-center gap-3">
             <button
@@ -237,5 +278,16 @@ const ChatArea = () => {
     </div>
   );
 };
+
+const ChatArea = ({
+  conversationId,
+}: {
+  conversationId: string | undefined;
+}) => (
+  <ConversationChat
+    key={conversationId ?? "new"}
+    conversationId={conversationId}
+  />
+);
 
 export default ChatArea;

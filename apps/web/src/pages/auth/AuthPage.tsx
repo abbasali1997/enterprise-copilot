@@ -73,7 +73,7 @@ const AuthPage = () => {
   return (
     <div
       id="bg-area"
-      className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
+      className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 py-20 text-gray-900 dark:bg-slate-950 dark:text-slate-100"
     >
       {workspaceSelection ? (
         <WorkplaceSelection

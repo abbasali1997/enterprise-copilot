@@ -86,9 +86,11 @@ const AppSidebar = () => {
       </div>
 
       <div className="p-4">
-        <button className="rainbow-btn focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300 cursor-pointer w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500">
-          <FontAwesomeIcon icon={faPlus} /> New Chat
-        </button>
+        <Link to="/home">
+          <button className="rainbow-btn focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300 cursor-pointer w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500">
+            <FontAwesomeIcon icon={faPlus} /> New Chat
+          </button>
+        </Link>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -117,13 +119,15 @@ const AppSidebar = () => {
               <li className="py-2">No conversations yet.</li>
             ) : (
               conversationList.map((conversation) => (
-                <li
-                  key={conversation.id}
-                  title={conversation.title}
-                  className="cursor-pointer truncate rounded-md px-2 py-2 hover:text-indigo-300"
-                >
-                  {conversation.title}
-                </li>
+                <Link to={`/home/${conversation.id}`} key={conversation.id}>
+                  <li
+                    key={conversation.id}
+                    title={conversation.title}
+                    className="cursor-pointer truncate rounded-md px-2 py-2 hover:text-indigo-300"
+                  >
+                    {conversation.title}
+                  </li>
+                </Link>
               ))
             )}
           </ul>

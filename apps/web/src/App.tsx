@@ -93,6 +93,7 @@ function App() {
             <Route path="/invitation/:token" element={<InvitationReply />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/home" element={<HomePage />} />
+              <Route path="/home/:conversationId" element={<HomePage />} />
               <Route
                 path="/workspaces/change"
                 element={<ChangeWorkspacePage />}
