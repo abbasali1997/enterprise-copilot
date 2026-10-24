@@ -7,7 +7,9 @@ export const sendMessageInputSchema = z
     assistantId: z.string().trim().uuid().optional(),
     content: z.string().trim().min(1),
     provider: z.enum(["openai", "gemini"]),
-    model: z.enum([...OPENAI_MODELS, ...GEMINI_MODELS].map(({ model }) => model)),
+    model: z.enum(
+      [...OPENAI_MODELS, ...GEMINI_MODELS].map(({ model }) => model),
+    ),
   })
   .refine(
     ({ provider, model }) =>
@@ -15,7 +17,10 @@ export const sendMessageInputSchema = z
         (entry) =>
           entry.provider === provider && entry.model === model && entry.enabled,
       ),
-    { message: "Model must be enabled and belong to the selected provider", path: ["model"] },
+    {
+      message: "Model must be enabled and belong to the selected provider",
+      path: ["model"],
+    },
   );
 
 export const getConversationInputSchema = z.object({
@@ -26,4 +31,7 @@ export const renameConversationInputSchema = getConversationInputSchema.extend({
   title: z.string().trim().min(1).max(200),
 });
 
-export const onGenerationInputSchema = z.object({ generationId: z.string() });
+export const onGenerationInputSchema = z.object({
+  generationId: z.string().uuid(),
+  lastEventId: z.string().nullish(),
+});

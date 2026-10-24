@@ -1,3 +1,4 @@
+import { tracked } from "@trpc/server";
 import { GEMINI_MODELS, OPENAI_MODELS } from "@enterprise/llm";
 import { tenantProcedure, router } from "../trpc.js";
 import {
@@ -7,6 +8,7 @@ import {
   sendMessageInputSchema,
 } from "../schemas/conversation.schema.js";
 import {
+  onGeneration,
   getConversationList,
   getConversation,
   renameConversation,
@@ -42,7 +44,14 @@ export const conversationRouter = router({
 
   onGeneration: tenantProcedure
     .input(onGenerationInputSchema)
-    .subscription(async function* ({ ctx, input }) {
-      // yield typed generation events
+    .subscription(async function* ({ ctx, input, signal }) {
+      for await (const { id, event } of onGeneration(
+        input.generationId,
+        ctx.user.id,
+        ctx.organizationId,
+        input.lastEventId,
+        signal,
+      ))
+        yield tracked(id, event);
     }),
 });

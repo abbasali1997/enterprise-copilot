@@ -11,6 +11,7 @@ export const appRouter = router({
   user: userRouter,
   organization: organizationRouter,
   conversation: conversationRouter,
+  chat: conversationRouter,
 });
 
 export type AppRouter = typeof appRouter;

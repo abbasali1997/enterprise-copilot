@@ -3,8 +3,18 @@ import { verifyToken } from "@enterprise/auth";
 
 export function createContext({ req, res }: CreateExpressContextOptions) {
   const anonymousContext = { req, res, user: null };
+  let authHeader = req.headers.authorization;
 
-  const authHeader = req.headers.authorization;
+  if (!authHeader && req.headers.accept?.includes("text/event-stream")) {
+    try {
+      const params = JSON.parse(String(req.query.connectionParams ?? "{}"));
+      if (typeof params.token === "string")
+        authHeader = `Bearer ${params.token}`;
+    } catch {
+      return anonymousContext;
+    }
+  }
+
   if (!authHeader) return anonymousContext;
 
   const match = /^Bearer\s+(\S+)$/i.exec(authHeader.trim());
@@ -14,7 +24,6 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
   try {
     const jwtPayload = verifyToken(token);
     if (typeof jwtPayload === "string") return anonymousContext;
-
     return {
       req,
       res,

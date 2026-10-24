@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { trpcClient } from "@/lib/trpc.ts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -23,7 +23,12 @@ const ConversationChat = ({
     "gemini-3.5-flash-lite",
   );
   const [localMessages, setMessages] = useState<MessageType[] | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  useEffect(() => () => subscriptionRef.current?.unsubscribe(), []);
+
+  const messageListRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const conversationIdRef = useRef<string | undefined>(conversationId);
   // to ensure another message can not be sent while one's response is being generated
@@ -103,14 +108,53 @@ const ConversationChat = ({
         {
           id: data.generationId,
           role: "ASSISTANT",
-          content: data.metadata.text,
-          status: "COMPLETED",
-          model: data.metadata.model,
+          content: "",
+          status: "STREAMING",
+          model: _input.model,
           errorMessage: null,
         },
       ]);
+      const finish = (error?: string) => {
+        sendingRef.current = false;
+        setIsGenerating(false);
+        setMessages((current) =>
+          (current ?? []).map((message) =>
+            message.id === data.generationId
+              ? {
+                  ...message,
+                  status: error ? "FAILED" : "COMPLETED",
+                  errorMessage: error ?? null,
+                }
+              : message,
+          ),
+        );
+      };
+      subscriptionRef.current = trpcClient.chat.onGeneration.subscribe(
+        { generationId: data.generationId },
+        {
+          onData: ({ data: event }) => {
+            if (event.type === "text-delta")
+              setMessages((current) =>
+                (current ?? []).map((message) =>
+                  message.id === data.generationId
+                    ? { ...message, content: message.content + event.delta }
+                    : message,
+                ),
+              );
+            else if (event.type === "finish") finish();
+            else if (event.type === "error") finish(event.message);
+          },
+          onError: (error) => finish(error.message),
+          onComplete: () => {
+            sendingRef.current = false;
+            setIsGenerating(false);
+          },
+        },
+      );
     },
     onError: (error, _input, context) => {
+      sendingRef.current = false;
+      setIsGenerating(false);
       setMessages((current) =>
         (current ?? messages).map((message) =>
           message.id === context?.temporaryId
@@ -119,16 +163,21 @@ const ConversationChat = ({
         ),
       );
     },
-    onSettled: () => {
-      sendingRef.current = false;
-    },
   });
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+    if (messageList) {
+      messageList.scrollTop = messageList.scrollHeight;
+    }
+  }, [localMessages, currentConversation, isGenerating]);
 
   const submitMessage = () => {
     const content = textareaRef.current?.value.trim();
     if (!content || !selectedModel || sendingRef.current) return;
 
     sendingRef.current = true;
+    setIsGenerating(true);
     if (textareaRef.current) {
       textareaRef.current.value = "";
       textareaRef.current.style.height = "auto";
@@ -164,7 +213,10 @@ const ConversationChat = ({
   return (
     <div className="w-full h-full flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {messages.length ? (
-        <div className="my-4 min-h-0 flex-1 overflow-y-auto">
+        <div
+          ref={messageListRef}
+          className="my-4 min-h-0 flex-1 overflow-y-auto"
+        >
           <div className="w-full max-w-3/4 mx-auto flex flex-col justify-start">
             {messages.map((message) => (
               <div key={message.id}>
@@ -179,7 +231,7 @@ const ConversationChat = ({
                 )}
               </div>
             ))}
-            {sendMessage.isPending && (
+            {isGenerating && (
               <p
                 role="status"
                 className="my-2 text-sm text-gray-500 dark:text-slate-400"
@@ -214,7 +266,7 @@ const ConversationChat = ({
             </button>
 
             <textarea
-              disabled={sendMessage.isPending}
+              disabled={isGenerating}
               ref={textareaRef}
               rows={1}
               onKeyDown={(event) => {
@@ -237,7 +289,7 @@ const ConversationChat = ({
                 aria-label="Chat model"
                 value={selectedModel?.model ?? ""}
                 onChange={(event) => setSelectedModelId(event.target.value)}
-                disabled={sendMessage.isPending || models.length === 0}
+                disabled={isGenerating || models.length === 0}
                 className="max-w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:border-white/15 dark:bg-slate-900 dark:text-slate-100 dark:focus-visible:ring-cyan-400"
               >
                 {models.length === 0 && (
@@ -263,7 +315,7 @@ const ConversationChat = ({
             <button
               className="cursor-pointer text-lg flex h-9 w-9 shrink-0 items-center justify-center rounded-4xl text-gray-800 dark:text-cyan-200 transition hover:bg-gray-200 dark:hover:bg-cyan-400/10 hover:text-indigo-600 dark:hover:text-cyan-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300"
               onClick={submitMessage}
-              disabled={sendMessage.isPending || !selectedModel}
+              disabled={isGenerating || !selectedModel}
               aria-label="Send message"
             >
               <FontAwesomeIcon icon={faPaperPlane} />
