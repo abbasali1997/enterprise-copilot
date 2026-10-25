@@ -12,6 +12,7 @@ import {
   findOne,
 } from "../services/organization.service.js";
 import {
+  getOrganizationMembers,
   inviteOrganizationMember,
   respondToInvitation,
   updateOrganizationMember,
@@ -24,6 +25,10 @@ export const organizationRouter = router({
 
   getActive: tenantProcedure.query(({ ctx }) =>
     findOne(ctx.organizationId, ctx.role),
+  ),
+
+  getMembers: tenantProcedure.query(({ ctx }) =>
+    getOrganizationMembers(ctx.organizationId, ctx.role),
   ),
 
   changeOrganization: protectedProcedure

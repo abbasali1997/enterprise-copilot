@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { trpcClient } from "@/lib/trpc.ts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperclip, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import MessageBubble from "@/components/chat/MessageBubble.tsx";
 
 type MessageType = {
@@ -258,13 +258,6 @@ const ConversationChat = ({
       <div className="relative mx-auto mt-auto w-full max-w-3/4 shrink-0 pb-6">
         <div className="rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-slate-900/90 p-3 shadow-xl shadow-gray-400 dark:shadow-black/25 focus-within:border-indigo-400 dark:focus-within:border-cyan-400/60 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-cyan-400/15">
           <div className="flex items-center gap-3">
-            <button
-              className="cursor-pointer text-lg flex h-9 w-9 shrink-0 items-center justify-center rounded-4xl text-gray-800 dark:text-cyan-200 transition hover:bg-gray-200 dark:hover:bg-cyan-400/10 hover:text-indigo-600 dark:hover:text-cyan-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:focus-visible:outline-cyan-300"
-              aria-label="Attach File(s)"
-            >
-              <FontAwesomeIcon icon={faPaperclip} />
-            </button>
-
             <textarea
               disabled={isGenerating}
               ref={textareaRef}
@@ -280,7 +273,7 @@ const ConversationChat = ({
                 }
               }}
               onInput={resizeMessage}
-              placeholder="Ask Here"
+              placeholder="What Is Your Question?"
               className="min-h-10 flex-1 resize-none overflow-y-hidden leading-7 bg-transparent px-2 py-2 text-lg outline-none placeholder:text-gray-500 dark:placeholder:text-slate-400 text-gray-900 dark:text-slate-100 caret-indigo-500 dark:caret-cyan-300"
             />
 
@@ -290,7 +283,7 @@ const ConversationChat = ({
                 value={selectedModel?.model ?? ""}
                 onChange={(event) => setSelectedModelId(event.target.value)}
                 disabled={isGenerating || models.length === 0}
-                className="max-w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:border-white/15 dark:bg-slate-900 dark:text-slate-100 dark:focus-visible:ring-cyan-400"
+                className="max-w-full rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800 outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:focus-visible:ring-cyan-400"
               >
                 {models.length === 0 && (
                   <option value="">Models unavailable</option>

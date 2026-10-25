@@ -11,6 +11,7 @@ import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
 import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
 import MemberAccessModal from "@/components/workspace/MemberAccessModal.tsx";
 import WorkspaceSettings from "@/components/workspace/WorkspaceSettings.tsx";
+import WorkspaceDocuments from "@/components/workspace/WorkspaceDocuments.tsx";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");
@@ -45,7 +46,20 @@ function WorkspacePage() {
     enabled: !!auth?.user && organizationId === auth.user.organization.id,
   });
 
-  const signedInMember = organization?.members.find(
+  const membersQueryKey: [string[], { input: unknown; type: "query" }] = [
+    trpc.organization.getMembers.queryKey()[0],
+    workspaceQueryKey[1],
+  ];
+
+  const canViewMembers =
+    !!auth?.user && can(auth.user.organization.role, PERMISSIONS.MEMBER_VIEW);
+  const membersQuery = useQuery({
+    ...trpc.organization.getMembers.queryOptions(),
+    queryKey: membersQueryKey,
+    enabled: !!organizationId && canViewMembers && activeTab === "members",
+  });
+
+  const signedInMember = membersQuery.data?.find(
     (member) => member.userId === auth?.user?.id,
   );
   const canSuspend =
@@ -58,7 +72,7 @@ function WorkspacePage() {
       onSuccess: () => {
         setAccessMember(null);
         return queryClient.invalidateQueries({
-          queryKey: workspaceQueryKey,
+          queryKey: membersQueryKey,
         });
       },
     }),
@@ -141,19 +155,53 @@ function WorkspacePage() {
                     {/* Add the Overview component here. */}
                   </section>
                 )}
-                {activeTab === "members" && (
-                  <WorkspaceMembers
-                    members={organization.members}
-                    onAddMember={openAddMember}
-                    onActivate={onActivate}
-                    onManageAccess={(member) => {
-                      if (updateMember.isPending) return;
-                      updateMember.reset();
-                      setAccessMember({
-                        id: member.id,
-                        name: member.user.name,
-                      });
-                    }}
+                {activeTab === "members" &&
+                  canViewMembers &&
+                  membersQuery.isSuccess && (
+                    <WorkspaceMembers
+                      members={membersQuery.data ?? []}
+                      onAddMember={openAddMember}
+                      onActivate={onActivate}
+                      onManageAccess={(member) => {
+                        if (updateMember.isPending) return;
+                        updateMember.reset();
+                        setAccessMember({
+                          id: member.id,
+                          name: member.user.name,
+                        });
+                      }}
+                    />
+                  )}
+                {activeTab === "members" && !canViewMembers && (
+                  <p role="alert">
+                    You do not have permission to view members.
+                  </p>
+                )}
+                {activeTab === "members" &&
+                  canViewMembers &&
+                  membersQuery.isPending && (
+                    <p role="status">Loading members...</p>
+                  )}
+                {activeTab === "members" &&
+                  canViewMembers &&
+                  membersQuery.isError && (
+                    <p role="alert">{membersQuery.error.message}</p>
+                  )}
+                {activeTab === "documents" && (
+                  <WorkspaceDocuments
+                    documents={[
+                      {
+                        id: "123",
+                        type: "DOCUMENT",
+                        key: "some-document",
+                        name: "My Document",
+                        fileSize: 25,
+                        mimeType: "application/pdf",
+                        source:
+                          "D:\\Projects\\enterprise-copilot\\project-management\\EnterpriseCopilot_Docker_Architecture.pdf",
+                      },
+                    ]}
+                    onUpload={() => {}}
                   />
                 )}
                 {activeTab === "settings" && (

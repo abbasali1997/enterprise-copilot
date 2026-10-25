@@ -1,3 +1,5 @@
+import { can, PERMISSIONS, type OrganizationRole } from "@enterprise/auth";
+import { GEMINI_MODELS, OPENAI_MODELS } from "@enterprise/llm";
 import type {
   RenameConversationInputType,
   SendMessageInputType,
@@ -23,11 +25,30 @@ import {
   type LLMGenerateResult,
 } from "@enterprise/llm";
 
+const requirePermissions = (
+  role: OrganizationRole,
+  ...permissions: PERMISSIONS[]
+) => {
+  if (permissions.some((permission) => !can(role, permission))) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to perform this action",
+    });
+  }
+};
+
+export const getAvailableModels = (role: OrganizationRole) => {
+  requirePermissions(role, PERMISSIONS.MODEL_VIEW);
+  return [...OPENAI_MODELS, ...GEMINI_MODELS].filter((model) => model.enabled);
+};
+
 export const getConversationList = async (
   signedInUserId: string,
   organizationId: string,
-) =>
-  prisma.conversation.findMany({
+  role: OrganizationRole,
+) => {
+  requirePermissions(role, PERMISSIONS.CONVERSATION_READ_OWN);
+  return prisma.conversation.findMany({
     where: {
       organizationId,
       userId: signedInUserId,
@@ -44,12 +65,21 @@ export const getConversationList = async (
       },
     },
   });
+};
 
 export const sendMessage = async (
   input: SendMessageInputType,
   signedInUserId: string,
   organizationId: string,
+  role: OrganizationRole,
 ) => {
+  requirePermissions(role, PERMISSIONS.CHAT_USE, PERMISSIONS.MODEL_USE);
+  requirePermissions(
+    role,
+    input.conversationId
+      ? PERMISSIONS.CONVERSATION_READ_OWN
+      : PERMISSIONS.CONVERSATION_CREATE,
+  );
   // If conversationId not provided then create a new conversation first
   let conversation;
   if (!input.conversationId) {
@@ -119,9 +149,11 @@ export async function* onGeneration(
   generationId: string,
   userId: string,
   organizationId: string,
+  role: OrganizationRole,
   lastEventId?: string | null,
   signal?: AbortSignal,
 ) {
+  requirePermissions(role, PERMISSIONS.CHAT_USE, PERMISSIONS.CONVERSATION_READ_OWN);
   const state = generations.get(generationId);
   if (
     !state ||
@@ -269,7 +301,9 @@ export const getConversation = async (
   conversationId: string,
   signedInUserId: string,
   organizationId: string,
+  role: OrganizationRole,
 ) => {
+  requirePermissions(role, PERMISSIONS.CONVERSATION_READ_OWN);
   const conversation = await findUserConversation(
     conversationId,
     signedInUserId,
@@ -288,7 +322,9 @@ export const renameConversation = async (
   input: RenameConversationInputType,
   signedInUserId: string,
   organizationId: string,
+  role: OrganizationRole,
 ) => {
+  requirePermissions(role, PERMISSIONS.CONVERSATION_UPDATE_OWN);
   try {
     return await renameUserConversation(
       input.conversationId,
@@ -310,7 +346,7 @@ export const renameConversation = async (
   }
 };
 
-export async function* generateChatResponse(input: {
+async function* generateChatResponse(input: {
   generationId: string;
   provider: SendMessageInputType["provider"];
   model: SendMessageInputType["model"];

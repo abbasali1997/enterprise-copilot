@@ -5,7 +5,7 @@ packages:
 allowBuilds:
   '@google/genai': false
   '@prisma/engines': true
-  aws-sdk: set this to true or false
+  aws-sdk: true
   bcrypt: true
   esbuild: true
   msgpackr-extract: true

@@ -2,6 +2,7 @@ import type { OrganizationRole } from "@enterprise/auth";
 import {
   createOrganizationMember,
   findOrganizationMember,
+  findOrganizationMembers,
   findOne as findOrganizationMemberRecord,
   updateOrganizationMemberRecord,
 } from "../repositories/organization-membership.repository.js";
@@ -486,3 +487,21 @@ const generateInvitationToken = () => {
   };
 };
 
+
+export const getOrganizationMembers = async (
+  organizationId: string,
+  role: OrganizationRole,
+) => {
+  if (!can(role, PERMISSIONS.MEMBER_VIEW)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to view members",
+    });
+  }
+
+  return findOrganizationMembers({
+    where: { organizationId },
+    include: { user: { select: { name: true, email: true } } },
+    orderBy: [{ role: "asc" }, { joinedAt: "asc" }, { id: "asc" }],
+  });
+};

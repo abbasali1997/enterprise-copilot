@@ -2,13 +2,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowsRotate,
   faEye,
+  faFileLines,
   faGears,
   faSection,
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 
-export type WorkspaceTab = "overview" | "members" | "settings";
+export type WorkspaceTab = "overview" | "members" | "settings" | "documents";
 
 type WorkspaceHeaderProps = {
   name: string;
@@ -42,6 +43,8 @@ function WorkspaceHeader({
         return faGears;
       case "members":
         return faUsers;
+      case "documents":
+        return faFileLines;
       default:
         return faSection;
     }
@@ -79,22 +82,24 @@ function WorkspaceHeader({
       </div>
 
       <div className="flex gap-15 p-5 pb-0" aria-label="Workspace sections">
-        {(["overview", "members", "settings"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            aria-pressed={activeTab === tab}
-            onClick={() => onTabChange(tab)}
-            className={`cursor-pointer text-md border-b-4 pb-2 font-bold capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
-              activeTab === tab
-                ? "border-indigo-600 text-indigo-600 dark:border-indigo-300 dark:text-indigo-300"
-                : "border-transparent text-gray-600"
-            }`}
-          >
-            <FontAwesomeIcon icon={getSectionIcon(tab)} className="mr-2" />
-            {tab}
-          </button>
-        ))}
+        {(["overview", "members", "documents", "settings"] as const).map(
+          (tab) => (
+            <button
+              key={tab}
+              type="button"
+              aria-pressed={activeTab === tab}
+              onClick={() => onTabChange(tab)}
+              className={`cursor-pointer text-md border-b-4 pb-2 font-bold capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                activeTab === tab
+                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-300 dark:text-indigo-300"
+                  : "border-transparent text-gray-600"
+              }`}
+            >
+              <FontAwesomeIcon icon={getSectionIcon(tab)} className="mr-2" />
+              {tab}
+            </button>
+          ),
+        )}
       </div>
     </div>
   );

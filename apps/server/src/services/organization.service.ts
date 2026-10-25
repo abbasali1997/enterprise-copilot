@@ -34,16 +34,6 @@ export const findOne = async (
       id: activeOrganizationId,
       status: "ACTIVE",
     },
-    include: {
-      members: {
-        include: {
-          user: {
-            select: { name: true, email: true },
-          },
-        },
-        orderBy: [{ role: "asc" }, { joinedAt: "asc" }, { id: "asc" }],
-      },
-    },
   });
 
   if (!organization) {

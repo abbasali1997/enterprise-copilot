@@ -1,5 +1,4 @@
 import { tracked } from "@trpc/server";
-import { GEMINI_MODELS, OPENAI_MODELS } from "@enterprise/llm";
 import { tenantProcedure, router } from "../trpc.js";
 import {
   getConversationInputSchema,
@@ -9,6 +8,7 @@ import {
 } from "../schemas/conversation.schema.js";
 import {
   onGeneration,
+  getAvailableModels,
   getConversationList,
   getConversation,
   renameConversation,
@@ -16,30 +16,33 @@ import {
 } from "../services/conversation.service.js";
 
 export const conversationRouter = router({
-  models: tenantProcedure.query(() =>
-    [...OPENAI_MODELS, ...GEMINI_MODELS].filter((model) => model.enabled),
-  ),
+  models: tenantProcedure.query(({ ctx }) => getAvailableModels(ctx.role)),
 
   get: tenantProcedure
     .input(getConversationInputSchema)
     .query(({ input, ctx }) =>
-      getConversation(input.conversationId, ctx.user.id, ctx.organizationId),
+      getConversation(
+        input.conversationId,
+        ctx.user.id,
+        ctx.organizationId,
+        ctx.role,
+      ),
     ),
 
   rename: tenantProcedure
     .input(renameConversationInputSchema)
     .mutation(({ input, ctx }) =>
-      renameConversation(input, ctx.user.id, ctx.organizationId),
+      renameConversation(input, ctx.user.id, ctx.organizationId, ctx.role),
     ),
 
   sendMessage: tenantProcedure
     .input(sendMessageInputSchema)
     .mutation(({ input, ctx }) =>
-      sendMessage(input, ctx.user.id, ctx.organizationId),
+      sendMessage(input, ctx.user.id, ctx.organizationId, ctx.role),
     ),
 
   list: tenantProcedure.query(({ ctx }) =>
-    getConversationList(ctx.user.id, ctx.user.organizationId),
+    getConversationList(ctx.user.id, ctx.organizationId, ctx.role),
   ),
 
   onGeneration: tenantProcedure
@@ -49,6 +52,7 @@ export const conversationRouter = router({
         input.generationId,
         ctx.user.id,
         ctx.organizationId,
+        ctx.role,
         input.lastEventId,
         signal,
       ))
