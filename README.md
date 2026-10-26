@@ -37,16 +37,21 @@ POSTGRES_PASSWORD=development_password
 DATABASE_URL=postgresql://developer:development_password@localhost:5432/enterprise_copilot
 SERVER_PORT=3000
 REDIS_URL=redis://localhost:6379
-S3_ENDPOINT=http://localhost:4566
-S3_ACCESS_KEY=test
-S3_SECRET_KEY=test
+S3_ENDPOINT=http://localhost:9000
+S3_PUBLIC_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=rustfsadmin
+S3_SECRET_KEY=rustfsadmin
+RUSTFS_ACCESS_KEY=rustfsadmin
+RUSTFS_SECRET_KEY=rustfsadmin
 S3_BUCKET=enterprise-copilot
 AWS_REGION=eu-central-1
 AWS_DEFAULT_REGION=eu-central-1
 ```
 
-For LocalStack, replace the example `LOCALSTACK_AUTH_TOKEN` with your own token if required by the configured image.
-PostgreSQL and Redis can run without LocalStack for auth and organization development.
+RustFS provides local S3-compatible storage. No LocalStack account or token is needed.
+The local server reads `S3_ACCESS_KEY` and `S3_SECRET_KEY`; Compose uses `RUSTFS_ACCESS_KEY` and
+`RUSTFS_SECRET_KEY` for RustFS, bucket initialization, and the application containers. Keep both pairs matched
+if you change the development defaults. PostgreSQL and Redis can run without RustFS for auth and organization development.
 
 Authentication uses HS256 with one shared secret. Generate a random secret:
 
@@ -80,14 +85,35 @@ If installation fails with `ERR_PNPM_IGNORED_BUILDS` for bcrypt, update the exis
 docker compose up -d postgres redis
 ```
 
-For local S3 development, also start LocalStack:
+For document uploads, also start RustFS and its initialization service:
 
 ```sh
-docker compose up -d localstack
+docker compose up -d rustfs rustfs-init
 ```
 
-The configured services expose PostgreSQL on port 5432, Redis on 6379, and LocalStack on 4566. Starting LocalStack does
-not automatically create the S3 bucket; create the configured bucket before using uploads.
+The configured services expose PostgreSQL on port 5432, Redis on 6379, the RustFS S3 API on 9000, and the
+RustFS console on 9001. The storage ports are bound to localhost.
+
+The one-shot `rustfs-init` service waits for RustFS to become healthy, creates the configured `S3_BUCKET`
+(default: `enterprise-copilot`) if missing, and configures bucket CORS for `http://localhost:5173` and
+`http://127.0.0.1:5173`. An `Exited (0)` status for this service means initialization succeeded.
+The server and worker containers wait for initialization before starting.
+
+Open http://localhost:9001 and sign in with `RUSTFS_ACCESS_KEY` and `RUSTFS_SECRET_KEY`
+(default: `rustfsadmin` / `rustfsadmin`) to browse buckets and uploaded documents.
+
+| Setting | Server on the host | Server in Docker Compose |
+|---------|--------------------|--------------------------|
+| `S3_ENDPOINT` | `http://localhost:9000` | `http://rustfs:9000` |
+| `S3_PUBLIC_ENDPOINT` | `http://localhost:9000` | `http://localhost:9000` |
+
+The public endpoint is used to sign browser upload URLs; it must be reachable from your browser.
+Do not replace the hostname after signing. Remove any old port 4566 override from `.env`.
+If you change the frontend origin, update both RustFS's allowed origins and the bucket CORS rules in Compose,
+then recreate `rustfs` and `rustfs-init`.
+
+RustFS stores files in the `rustfs_data` volume. Existing LocalStack objects are not migrated automatically;
+the legacy `localstack_data` volume is retained.
 
 ### 4. Prepare the database
 
@@ -132,7 +158,8 @@ pnpm --filter web dev
 |--------------------------|----------------------------|
 | Web app                  | http://localhost:5173      |
 | tRPC API                 | http://localhost:3000/trpc |
-| LocalStack, when started | http://localhost:4566      |
+| RustFS S3 API            | http://localhost:9000      |
+| RustFS console           | http://localhost:9001      |
 
 The web app sends requests to `/trpc`. Vite proxies these requests to `http://localhost:3000`; update
 `apps/web/vite.config.ts` if you change the server port.
@@ -219,9 +246,10 @@ docker compose up -d --build --no-deps server
 ```sh
 docker compose ps
 docker compose logs -f server
-docker compose logs -f postgres redis
+docker compose logs -f postgres redis rustfs
+docker compose logs rustfs-init
 docker compose down
 ```
 
-`docker compose down` preserves the named database, Redis, and LocalStack volumes. Stop local development processes with
+`docker compose down` preserves the named database, Redis, and RustFS volumes. Stop local development processes with
 Ctrl+C.
