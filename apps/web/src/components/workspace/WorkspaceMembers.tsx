@@ -1,4 +1,4 @@
-import { memo, useContext } from "react";
+import { memo, useContext, useState } from "react";
 import { AuthContext } from "@/contexts/authContext.tsx";
 import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -9,8 +9,10 @@ import {
   faUserCheck,
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
+import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
 
 type WorkspaceMembersPropType = {
+  organizationName: string;
   members: {
     organizationId: string;
     role: "OWNER" | "ADMIN" | "MEMBER";
@@ -25,7 +27,6 @@ type WorkspaceMembersPropType = {
     updatedAt: string;
     joinedAt: string;
   }[];
-  onAddMember?: () => void;
   onEdit?: (member: WorkspaceMembersPropType["members"][number]) => void;
   onActivate?: (member: WorkspaceMembersPropType["members"][number]) => void;
   onManageAccess?: (
@@ -47,8 +48,8 @@ const statusStyles = {
 };
 
 function WorkspaceMembers({
+  organizationName,
   members,
-  onAddMember,
   onEdit,
   onActivate,
   onManageAccess,
@@ -69,6 +70,8 @@ function WorkspaceMembers({
   const canActivate =
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REACTIVATE);
 
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
     month: "short",
@@ -80,6 +83,13 @@ function WorkspaceMembers({
       aria-label="Workspace members"
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-white p-5 dark:bg-slate-800 dark:text-slate-100"
     >
+      {isAddMemberOpen ? (
+        <AddMemberModal
+          organizationName={organizationName}
+          onClose={() => setIsAddMemberOpen(false)}
+        />
+      ) : null}
+
       <div className="mb-10 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-bold text-lg">Members ({members.length})</h3>
@@ -90,7 +100,7 @@ function WorkspaceMembers({
 
         <button
           type="button"
-          onClick={onAddMember}
+          onClick={() => setIsAddMemberOpen(true)}
           disabled={!canInvite}
           className="rainbow-btn inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
         >

@@ -4,7 +4,7 @@ import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faDownload,
-  faPen,
+  faEye,
   faTrash,
   faUpload,
 } from "@fortawesome/free-solid-svg-icons";
@@ -14,19 +14,16 @@ import { useMutation } from "@tanstack/react-query";
 
 type WorkspaceDocument = {
   id: string;
-  key: string;
   name: string;
   type: "BINARY" | "IMAGE" | "DOCUMENT";
   mimeType: string;
   fileSize: number;
-  source: string;
 };
 
 type WorkspaceDocumentsPropType = {
   documents: WorkspaceDocument[];
   onAddToDocumentList: (document: WorkspaceDocument) => void;
   organizationName: string;
-  onEdit?: (document: WorkspaceDocument) => void;
   onDownload?: (document: WorkspaceDocument) => void;
   onDelete?: (document: WorkspaceDocument) => void;
 };
@@ -35,7 +32,6 @@ function WorkspaceDocuments({
   documents,
   onAddToDocumentList,
   organizationName,
-  onEdit,
   onDownload,
   onDelete,
 }: WorkspaceDocumentsPropType) {
@@ -46,7 +42,10 @@ function WorkspaceDocuments({
   const createUpload = useMutation(
     trpc.documents.createUpload.mutationOptions(),
   );
-  const finalizeUpload = useMutation(trpc.documents.finalizeUpload.mutationOptions());
+  const finalizeUpload = useMutation(
+    trpc.documents.finalizeUpload.mutationOptions(),
+  );
+
   const upload = useMutation({
     mutationFn: async (file: File) => {
       if (
@@ -75,7 +74,13 @@ function WorkspaceDocuments({
           "Document upload failed (" + response.status + "). Please try again.",
         );
       }
-      return finalizeUpload.mutateAsync({ name: file.name, mimeType: "application/pdf", fileSize: file.size, key: data.key });
+
+      return finalizeUpload.mutateAsync({
+        name: file.name,
+        mimeType: "application/pdf",
+        fileSize: file.size,
+        key: data.key,
+      });
     },
     onSuccess: (document) => {
       onAddToDocumentList(document);
@@ -87,7 +92,6 @@ function WorkspaceDocuments({
   const role = auth?.user?.organization.role;
   const canRead = !!role && can(role, PERMISSIONS.DOCUMENT_READ);
   const canUpload = !!role && can(role, PERMISSIONS.DOCUMENT_UPLOAD);
-  const canUpdate = !!role && can(role, PERMISSIONS.DOCUMENT_UPDATE);
   const canDownload = !!role && can(role, PERMISSIONS.DOCUMENT_DOWNLOAD);
   const canDelete = !!role && can(role, PERMISSIONS.DOCUMENT_DELETE);
 
@@ -149,7 +153,7 @@ function WorkspaceDocuments({
           </caption>
           <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-slate-900 dark:text-slate-100">
             <tr>
-              {["Name", "File Type", "Size", "Actions"].map((column) => (
+              {["Name", "File Type", "Size", "Actions", ""].map((column) => (
                 <th
                   key={column}
                   scope="col"
@@ -181,18 +185,8 @@ function WorkspaceDocuments({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => onEdit?.(document)}
-                      disabled={!canUpdate || !onEdit}
-                      aria-label={`Edit ${document.name}`}
-                      className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
-                    >
-                      <FontAwesomeIcon icon={faPen} className="mr-2" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => onDownload?.(document)}
-                      disabled={!canDownload || !onDownload}
+                      disabled={!canDownload}
                       aria-label={`Download ${document.name}`}
                       className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
                     >
@@ -202,7 +196,7 @@ function WorkspaceDocuments({
                     <button
                       type="button"
                       onClick={() => onDelete?.(document)}
-                      disabled={!canDelete || !onDelete}
+                      disabled={!canDelete}
                       aria-label={`Delete ${document.name}`}
                       className="rounded-lg border border-red-200 px-3 py-1.5 text-red-600 disabled:opacity-40"
                     >
@@ -210,6 +204,13 @@ function WorkspaceDocuments({
                       Delete
                     </button>
                   </div>
+                </td>
+
+                <td className="px-5 py-4">
+                  <FontAwesomeIcon
+                    icon={faEye}
+                    className="cursor-pointer hover:text-indigo-500 hover:dark:text-cyan-500"
+                  />
                 </td>
               </tr>
             ))}

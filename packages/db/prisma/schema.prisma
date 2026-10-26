@@ -110,6 +110,7 @@ model Organization {
   members                 OrganizationMember[]
   conversations           Conversation[]
   organizationInvitations OrganizationInvitation[]
+  attachments             Attachment[]
 }
 
 model OrganizationMember {
@@ -228,11 +229,14 @@ enum AttachmentType {
 }
 
 model Attachment {
-  id       String         @id @default(uuid())
-  key      String
-  name     String
-  type     AttachmentType
-  mimeType String
-  fileSize Int
-  source   String
+  id             String         @id @default(uuid())
+  organizationId String
+  key            String
+  name           String
+  type           AttachmentType
+  mimeType       String
+  fileSize       Int
+  source         String
+
+  organization Organization @relation(references: [id], fields: [organizationId], onDelete: Cascade)
 }

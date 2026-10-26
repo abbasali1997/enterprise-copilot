@@ -1,6 +1,7 @@
 import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
 
 export type UploadInput = {
+  organizationId: string;
   name?: string;
   key: string;
   body: NonNullable<PutObjectCommandInput["Body"]>;

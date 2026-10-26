@@ -150,15 +150,15 @@ const AppSidebar = () => {
                 alt=""
               />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-lg font-medium text-gray-900 dark:text-slate-100 flex items-center">
-                  <span className="p1">{auth.user.name}</span>
-                  <span
+                <div className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-slate-100">
+                  <div className="p1 flex-1 truncate">{auth.user.name}</div>
+                  <div
                     style={{ fontSize: "0.6rem" }}
-                    className={`${rolesStyles[auth.user.organization.role]} p-1 px-2 ml-2 rounded-xl`}
+                    className={`${rolesStyles[auth.user.organization.role]} p-1 px-2 rounded-xl shrink-0`}
                   >
                     {auth.user.organization.role}
-                  </span>
-                </span>
+                  </div>
+                </div>
                 <span className="block truncate text-xs text-gray-500 dark:text-slate-400">
                   {auth.user.email}
                 </span>

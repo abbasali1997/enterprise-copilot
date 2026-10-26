@@ -12,12 +12,15 @@ import type {
   createUploadInputSchema,
   finalizeUploadInputSchema,
 } from "../schemas/document.schema.js";
-import { s3Client } from "../storage/s3.client.js";
+import { s3Client, s3PresigningClient } from "../storage/s3.client.js";
 import { BUCKET } from "../storage/upload.service.js";
 
 import { logOperation } from "../utils/log-operation.js";
 
-import { createDocumentAttachment } from "../repositories/document.repository.js";
+import {
+  createDocumentAttachment,
+  getDocumentList,
+} from "../repositories/document.repository.js";
 
 const UPLOAD_EXPIRY_SECONDS = 5 * 60;
 
@@ -53,7 +56,7 @@ export const createUpload = async (
         ContentType: input.mimeType,
         ContentLength: input.fileSize,
       });
-      const url = await getSignedUrl(s3Client, command, {
+      const url = await getSignedUrl(s3PresigningClient, command, {
         expiresIn: UPLOAD_EXPIRY_SECONDS,
         signableHeaders: new Set(["content-type", "content-length"]),
       });
@@ -136,3 +139,17 @@ export const finalizeUpload = async (
       });
     },
   );
+
+export const getDocuments = (
+  organizationId: string,
+  role: OrganizationRole,
+) => {
+  if (!can(role, PERMISSIONS.DOCUMENT_VIEW)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to view documents",
+    });
+  }
+
+  return getDocumentList(organizationId);
+};

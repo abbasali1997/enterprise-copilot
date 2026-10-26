@@ -19,7 +19,7 @@
 #              │                │                 │
 #              ▼                ▼                 ▼
 #      ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-#      │ 4. Postgres  │  │ 5. Redis     │  │ 6. MinIO     │
+#      │ 4. Postgres  │  │ 5. Redis     │  │ 6. RustFS    │
 #      │ + pgvector   │  │    BullMQ    │  │ File storage │
 #      └──────────────┘  └──────┬───────┘  └──────────────┘
 #                               │
@@ -35,8 +35,6 @@
 #          External LLM APIs
 #         OpenAI / Gemini / etc.
 ####################################################################
-
-version: "3.9"
 
 services:
   # =========================================================
@@ -88,10 +86,11 @@ services:
 
       REDIS_URL: redis://redis:6379
 
-      S3_ENDPOINT: http://localstack:4566
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
-      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      S3_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      S3_BUCKET: ${S3_BUCKET:-enterprise-copilot}
       AWS_REGION: eu-central-1
       AWS_DEFAULT_REGION: eu-central-1
 
@@ -102,8 +101,8 @@ services:
       redis:
         condition: service_healthy
 
-      localstack:
-        condition: service_started
+      rustfs-init:
+        condition: service_completed_successfully
 
     restart: unless-stopped
 
@@ -130,10 +129,10 @@ services:
 
       REDIS_URL: redis://redis:6379
 
-      S3_ENDPOINT: http://localstack:4566
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
-      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      S3_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      S3_BUCKET: ${S3_BUCKET:-enterprise-copilot}
       AWS_REGION: eu-central-1
       AWS_DEFAULT_REGION: eu-central-1
 
@@ -144,8 +143,8 @@ services:
       redis:
         condition: service_healthy
 
-      localstack:
-        condition: service_started
+      rustfs-init:
+        condition: service_completed_successfully
 
     restart: unless-stopped
 
@@ -211,25 +210,63 @@ services:
 
 
   # =========================================================
-  # Localstack - local S3-compatible file storage
+  # RustFS - local S3-compatible file storage
   # =========================================================
-  localstack:
-    image: localstack/localstack:stable
-    container_name: enterprise-copilot-localstack
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: enterprise-copilot-rustfs
+    command: [ "/data" ]
 
     environment:
-      SERVICES: s3
-      PERSISTENCE: "1"
-      AWS_DEFAULT_REGION: eu-central-1
-      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_REGION: eu-central-1
+      RUSTFS_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: http://localhost:9001,http://127.0.0.1:9001
 
     ports:
-      - "4566:4566"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
 
     volumes:
-      - localstack_data:/var/lib/localstack
+      - rustfs_data:/data
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/health/ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
     restart: unless-stopped
+
+  # One-shot setup: create the bucket if missing and allow browser uploads.
+  rustfs-init:
+    image: amazon/aws-cli
+    environment:
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      AWS_DEFAULT_REGION: eu-central-1
+      AWS_EC2_METADATA_DISABLED: "true"
+      S3_BUCKET: ${S3_BUCKET:-enterprise-copilot}
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "-ec" ]
+    command:
+      - |
+        if ! aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket "$$S3_BUCKET" 2>/dev/null; then
+          aws --endpoint-url http://rustfs:9000 s3api create-bucket \
+            --bucket "$$S3_BUCKET" \
+            --create-bucket-configuration LocationConstraint=eu-central-1
+        fi
+        aws --endpoint-url http://rustfs:9000 s3api put-bucket-cors \
+          --bucket "$$S3_BUCKET" \
+          --cors-configuration '{"CORSRules":[{"AllowedOrigins":["http://localhost:5173","http://127.0.0.1:5173"],"AllowedMethods":["PUT","GET","HEAD"],"AllowedHeaders":["content-type"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]}'
+    restart: "no"
 
 
 # =========================================================
@@ -238,6 +275,8 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  rustfs_data:
+  # Legacy LocalStack volume retained; its objects are not migrated to RustFS.
   localstack_data:
 
 

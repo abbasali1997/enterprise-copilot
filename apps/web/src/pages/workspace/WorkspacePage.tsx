@@ -4,21 +4,16 @@ import AppSidebar from "@/components/sidebar/Sidebar.tsx";
 import WorkspaceHeader, {
   type WorkspaceTab,
 } from "@/components/workspace/WorkspaceHeader.tsx";
-import { useCallback, useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
-import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
 import MemberAccessModal from "@/components/workspace/MemberAccessModal.tsx";
 import WorkspaceSettings from "@/components/workspace/WorkspaceSettings.tsx";
 import WorkspaceDocuments from "@/components/workspace/WorkspaceDocuments.tsx";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");
-
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const openAddMember = useCallback(() => setIsAddMemberOpen(true), []);
-  const closeAddMember = useCallback(() => setIsAddMemberOpen(false), []);
 
   const [accessMember, setAccessMember] = useState<{
     id: string;
@@ -52,12 +47,25 @@ function WorkspacePage() {
     workspaceQueryKey[1],
   ];
 
+  const documetsQueryKey: [string[], { input: unknown; type: "query" }] = [
+    trpc.documents.getDocuments.queryKey()[0],
+    workspaceQueryKey[1],
+  ];
+
   const canViewMembers =
     !!auth?.user && can(auth.user.organization.role, PERMISSIONS.MEMBER_VIEW);
   const membersQuery = useQuery({
     ...trpc.organization.getMembers.queryOptions(),
     queryKey: membersQueryKey,
     enabled: !!organizationId && canViewMembers && activeTab === "members",
+  });
+
+  const canViewDocuments =
+    !!auth?.user && can(auth.user.organization.role, PERMISSIONS.DOCUMENT_VIEW);
+  const documentsQuery = useQuery({
+    ...trpc.documents.getDocuments.queryOptions(),
+    queryKey: documetsQueryKey,
+    enabled: !!organizationId && canViewDocuments && activeTab === "documents",
   });
 
   const signedInMember = membersQuery.data?.find(
@@ -98,14 +106,7 @@ function WorkspacePage() {
   };
 
   return (
-    <div className="w-full h-screen grid grid-cols-9 overflow-hidden">
-      {organization && isAddMemberOpen ? (
-        <AddMemberModal
-          organizationName={organization.name}
-          onClose={closeAddMember}
-        />
-      ) : null}
-
+    <div className="w-full h-screen grid grid-cols-10 overflow-hidden">
       {accessMember && (
         <MemberAccessModal
           memberName={accessMember.name}
@@ -138,7 +139,7 @@ function WorkspacePage() {
         <AppSidebar />
       </div>
       {organization ? (
-        <main id="bg-area" className="col-span-7 min-h-0 min-w-0 w-full h-full">
+        <main id="bg-area" className="col-span-8 min-h-0 min-w-0 w-full h-full">
           <div id="bg-container" className="w-full h-full">
             <div className="w-full h-full grid grid-rows-15 p-5 gap-5">
               <div className="min-h-0 row-span-4">
@@ -160,8 +161,8 @@ function WorkspacePage() {
                   canViewMembers &&
                   membersQuery.isSuccess && (
                     <WorkspaceMembers
+                      organizationName={organization.name}
                       members={membersQuery.data ?? []}
-                      onAddMember={openAddMember}
                       onActivate={onActivate}
                       onManageAccess={(member) => {
                         if (updateMember.isPending) return;
@@ -188,24 +189,15 @@ function WorkspacePage() {
                   membersQuery.isError && (
                     <p role="alert">{membersQuery.error.message}</p>
                   )}
-                {activeTab === "documents" && (
-                  <WorkspaceDocuments
-                    documents={[
-                      {
-                        id: "123",
-                        type: "DOCUMENT",
-                        key: "some-document",
-                        name: "My Document",
-                        fileSize: 25,
-                        mimeType: "application/pdf",
-                        source:
-                          "D:\\Projects\\enterprise-copilot\\project-management\\EnterpriseCopilot_Docker_Architecture.pdf",
-                      },
-                    ]}
-                    onAddToDocumentList={() => {}}
-                    organizationName={organization.name}
-                  />
-                )}
+                {activeTab === "documents" &&
+                  canViewDocuments &&
+                  documentsQuery.isSuccess && (
+                    <WorkspaceDocuments
+                      documents={documentsQuery.data ?? []}
+                      onAddToDocumentList={() => {}}
+                      organizationName={organization.name}
+                    />
+                  )}
                 {activeTab === "settings" && (
                   <WorkspaceSettings
                     key={organization.id}

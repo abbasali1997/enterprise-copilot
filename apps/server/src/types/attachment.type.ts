@@ -1,4 +1,5 @@
 export type CreateAttachmentInputType = {
+  organizationId: string;
   key: string;
   name: string;
   type: "BINARY" | "IMAGE" | "DOCUMENT";
