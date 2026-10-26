@@ -9,7 +9,7 @@ import {
   faUserCheck,
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
-import AddMemberModal from "@/components/workspace/AddMemberModal.tsx";
+import AddMemberModal from "@/components/workspace/workspaceMembers/AddMemberModal.tsx";
 
 type WorkspaceMembersPropType = {
   organizationName: string;

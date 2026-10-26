@@ -1,6 +1,6 @@
-import AIPreferences from "./workspaceSettings/AIPreferences.tsx";
-import OrganizationProfile from "./workspaceSettings/OrganizationProfile.tsx";
-import DeleteWorkspace from "./workspaceSettings/DeleteWorkspace.tsx";
+import AIPreferences from "./AIPreferences.tsx";
+import OrganizationProfile from "./OrganizationProfile.tsx";
+import DeleteWorkspace from "./DeleteWorkspace.tsx";
 
 type WorkspaceSettingsProps = {
   organizationName: string;

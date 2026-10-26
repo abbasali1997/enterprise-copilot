@@ -1,6 +1,7 @@
 import { can, PERMISSIONS, type OrganizationRole } from "@enterprise/auth";
 import { randomUUID } from "node:crypto";
 import {
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3ServiceException,
@@ -19,10 +20,11 @@ import { logOperation } from "../utils/log-operation.js";
 
 import {
   createDocumentAttachment,
+  getDocumentById,
   getDocumentList,
 } from "../repositories/document.repository.js";
 
-const UPLOAD_EXPIRY_SECONDS = 5 * 60;
+const PRESIGNED_URL_EXPIRY_SECONDS = 5 * 60;
 
 export const createUpload = async (
   input: z.infer<typeof createUploadInputSchema>,
@@ -57,7 +59,7 @@ export const createUpload = async (
         ContentLength: input.fileSize,
       });
       const url = await getSignedUrl(s3PresigningClient, command, {
-        expiresIn: UPLOAD_EXPIRY_SECONDS,
+        expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
         signableHeaders: new Set(["content-type", "content-length"]),
       });
 
@@ -70,7 +72,7 @@ export const createUpload = async (
         },
         bucket,
         key,
-        expiresIn: UPLOAD_EXPIRY_SECONDS,
+        expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
       };
     },
   );
@@ -139,6 +141,61 @@ export const finalizeUpload = async (
       });
     },
   );
+
+export const viewUpload = async (
+  id: string,
+  organizationId: string,
+  role: OrganizationRole,
+) => {
+  if (!can(role, PERMISSIONS.DOCUMENT_READ)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to read documents",
+    });
+  }
+
+  const bucket = BUCKET;
+  if (!bucket) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "S3_BUCKET must be configured before uploading",
+    });
+  }
+
+  const attachment = await getDocumentById(id);
+  if (!attachment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Uploaded document with id ${id} was not found`,
+    });
+  }
+
+  if (attachment.organizationId !== organizationId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Attachment does not belong to your organization",
+    });
+  }
+
+  const { key } = attachment;
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+  });
+
+  const url = await getSignedUrl(s3PresigningClient, command, {
+    expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
+  });
+
+  return {
+    url,
+    method: "GET" as const,
+    bucket,
+    key,
+    expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
+  };
+};
 
 export const getDocuments = (
   organizationId: string,

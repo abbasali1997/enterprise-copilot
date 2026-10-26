@@ -7,10 +7,10 @@ import WorkspaceHeader, {
 import { useContext, useState } from "react";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import WorkspaceMembers from "@/components/workspace/WorkspaceMembers.tsx";
-import MemberAccessModal from "@/components/workspace/MemberAccessModal.tsx";
-import WorkspaceSettings from "@/components/workspace/WorkspaceSettings.tsx";
-import WorkspaceDocuments from "@/components/workspace/WorkspaceDocuments.tsx";
+import WorkspaceMembers from "@/components/workspace/workspaceMembers/WorkspaceMembers.tsx";
+import MemberAccessModal from "@/components/workspace/workspaceMembers/MemberAccessModal.tsx";
+import WorkspaceSettings from "@/components/workspace/workspaceSettings/WorkspaceSettings.tsx";
+import WorkspaceDocuments from "@/components/workspace/workspaceDocuments/WorkspaceDocuments.tsx";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");

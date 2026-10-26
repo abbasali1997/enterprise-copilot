@@ -231,7 +231,7 @@ enum AttachmentType {
 model Attachment {
   id             String         @id @default(uuid())
   organizationId String
-  key            String
+  key            String         @unique
   name           String
   type           AttachmentType
   mimeType       String

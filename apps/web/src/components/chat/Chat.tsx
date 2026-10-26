@@ -244,7 +244,7 @@ const ConversationChat = ({
       ) : (
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-2xl text-center">
-            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-slate-100">
+            <h1 className="text-4xl font-semibold tracking-tight text-slate-700 dark:text-slate-100">
               How can I help you?
             </h1>
 

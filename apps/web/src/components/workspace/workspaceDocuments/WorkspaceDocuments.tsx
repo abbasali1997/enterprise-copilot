@@ -2,13 +2,9 @@ import { memo, useContext, useRef, useState } from "react";
 import { AuthContext } from "@/contexts/authContext.tsx";
 import { can, PERMISSIONS } from "@enterprise/auth/permissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faDownload,
-  faEye,
-  faTrash,
-  faUpload,
-} from "@fortawesome/free-solid-svg-icons";
+import { faEye, faUpload } from "@fortawesome/free-solid-svg-icons";
 import AddDocumentModel from "./AddDocumentModel.tsx";
+import ViewDocumentModel from "./ViewDocumentModel.tsx";
 import { useTRPC } from "@/lib/trpc.ts";
 import { useMutation } from "@tanstack/react-query";
 
@@ -32,11 +28,12 @@ function WorkspaceDocuments({
   documents,
   onAddToDocumentList,
   organizationName,
-  onDownload,
-  onDelete,
 }: WorkspaceDocumentsPropType) {
   const trpc = useTRPC();
   const [isAddDocumentOpen, setIsAddDocumentOpen] = useState(false);
+  const [viewDocument, setViewDocument] = useState<WorkspaceDocument | null>(
+    null,
+  );
 
   const uploadInFlight = useRef(false);
   const createUpload = useMutation(
@@ -92,8 +89,6 @@ function WorkspaceDocuments({
   const role = auth?.user?.organization.role;
   const canRead = !!role && can(role, PERMISSIONS.DOCUMENT_READ);
   const canUpload = !!role && can(role, PERMISSIONS.DOCUMENT_UPLOAD);
-  const canDownload = !!role && can(role, PERMISSIONS.DOCUMENT_DOWNLOAD);
-  const canDelete = !!role && can(role, PERMISSIONS.DOCUMENT_DELETE);
 
   if (!canRead) {
     return <p role="alert">You do not have permission to view documents.</p>;
@@ -114,6 +109,14 @@ function WorkspaceDocuments({
       aria-label="Workspace documents"
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-white p-5 dark:bg-slate-800 dark:text-slate-100"
     >
+      {viewDocument && (
+        <ViewDocumentModel
+          key={viewDocument.id}
+          attachmentId={viewDocument.id}
+          name={viewDocument.name}
+          onClose={() => setViewDocument(null)}
+        />
+      )}
       {isAddDocumentOpen && (
         <AddDocumentModel
           organizationName={organizationName}
@@ -153,7 +156,7 @@ function WorkspaceDocuments({
           </caption>
           <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-slate-900 dark:text-slate-100">
             <tr>
-              {["Name", "File Type", "Size", "Actions", ""].map((column) => (
+              {["Name", "File Type", "Size", "Actions"].map((column) => (
                 <th
                   key={column}
                   scope="col"
@@ -181,36 +184,18 @@ function WorkspaceDocuments({
                       ? `${(document.fileSize / 1024).toFixed(1)} KB`
                       : `${(document.fileSize / (1024 * 1024)).toFixed(1)} MB`}
                 </td>
-                <td className="px-5 py-4">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onDownload?.(document)}
-                      disabled={!canDownload}
-                      aria-label={`Download ${document.name}`}
-                      className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
-                    >
-                      <FontAwesomeIcon icon={faDownload} className="mr-2" />
-                      Download
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete?.(document)}
-                      disabled={!canDelete}
-                      aria-label={`Delete ${document.name}`}
-                      className="rounded-lg border border-red-200 px-3 py-1.5 text-red-600 disabled:opacity-40"
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                      Delete
-                    </button>
-                  </div>
-                </td>
 
                 <td className="px-5 py-4">
-                  <FontAwesomeIcon
-                    icon={faEye}
-                    className="cursor-pointer hover:text-indigo-500 hover:dark:text-cyan-500"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setViewDocument(document)}
+                    aria-label={`View ${document.name}`}
+                    className="cursor-pointer border border-transparent rounded-2xl px-5 py-1 text-base bg-gray-200 dark:bg-gray-600 hover:text-indigo-500 focus-visible:outline-2 focus-visible:outline-indigo-500 hover:border-indigo-500 dark:hover:text-cyan-500 dark:hover:border-cyan-500"
+                  >
+                    <span className="">
+                      <FontAwesomeIcon icon={faEye} /> View{" "}
+                    </span>
+                  </button>
                 </td>
               </tr>
             ))}

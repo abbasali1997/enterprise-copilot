@@ -22,3 +22,10 @@ export const getDocumentList = (
       mimeType: true,
     },
   });
+
+export const getDocumentById = (id: string, db: DbClient = prisma) =>
+  db.attachment.findUnique({
+    where: {
+      id: id,
+    },
+  });
