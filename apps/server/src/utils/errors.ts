@@ -20,9 +20,11 @@ export function handleTRPCError(
   error: TRPCError,
   path?: string,
   user?: { id: string | undefined; organizationId: string },
+  requestId?: string,
 ): void {
   const requestContext = {
     path,
+    requestId,
     userId: user?.id,
     organizationId: user?.organizationId,
   };

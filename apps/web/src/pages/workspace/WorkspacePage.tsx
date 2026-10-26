@@ -15,6 +15,7 @@ import WorkspaceDocuments from "@/components/workspace/WorkspaceDocuments.tsx";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");
+
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const openAddMember = useCallback(() => setIsAddMemberOpen(true), []);
   const closeAddMember = useCallback(() => setIsAddMemberOpen(false), []);
@@ -201,7 +202,8 @@ function WorkspacePage() {
                           "D:\\Projects\\enterprise-copilot\\project-management\\EnterpriseCopilot_Docker_Architecture.pdf",
                       },
                     ]}
-                    onUpload={() => {}}
+                    onAddToDocumentList={() => {}}
+                    organizationName={organization.name}
                   />
                 )}
                 {activeTab === "settings" && (

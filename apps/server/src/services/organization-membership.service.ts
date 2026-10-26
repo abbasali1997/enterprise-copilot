@@ -36,6 +36,7 @@ import {
   findUserById,
 } from "../repositories/user.repository.js";
 import { logger } from "../utils/logger.js";
+import { errorDetails } from "../utils/log-operation.js";
 
 export const updateOrganizationMember = async (
   input: {
@@ -452,13 +453,16 @@ const validateInvitation = (
 
   if (invitation.expiresAt <= now) {
     // Mark invitation as expired
-    markInvitationExpired(invitation.id).then((res) => {
+    logger.info(JSON.stringify({ invitationId: invitation.id }), "Expired invitation encountered");
+    void markInvitationExpired(invitation.id).then((res) => {
       if (res.count !== 1) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not update invitation to Expired",
         });
       }
+    }).catch((error: unknown) => {
+      logger.error(JSON.stringify({ invitationId: invitation.id, ...errorDetails(error) }), "Failed to mark invitation expired");
     });
 
     throw new TRPCError({

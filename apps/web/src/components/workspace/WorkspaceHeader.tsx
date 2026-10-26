@@ -74,7 +74,7 @@ function WorkspaceHeader({
         <button
           type="button"
           onClick={() => navigate("/workspaces/change")}
-          className="cursor-pointer flex justify-around items-center font-semibold rounded-lg px-3 py-2 text-right text-sm text-gray-700 bg-gray-100 transition hover:bg-indigo-100 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:bg-slate-400 dark:text-gray-900 dark:hover:bg-indigo-300"
+          className="cursor-pointer flex justify-around items-center font-semibold rounded-lg px-3 py-2 text-right text-sm text-gray-700 bg-gray-100 transition hover:bg-indigo-100 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:bg-slate-600 dark:text-gray-300 dark:hover:bg-indigo-300"
         >
           <FontAwesomeIcon icon={faArrowsRotate} className="w-5 h-5 mr-4" />
           Switch Workspace
@@ -91,7 +91,7 @@ function WorkspaceHeader({
               onClick={() => onTabChange(tab)}
               className={`cursor-pointer text-md border-b-4 pb-2 font-bold capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
                 activeTab === tab
-                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-300 dark:text-indigo-300"
+                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
                   : "border-transparent text-gray-600"
               }`}
             >

@@ -25,6 +25,9 @@ import {
   type LLMGenerateResult,
 } from "@enterprise/llm";
 
+import { logger } from "../utils/logger.js";
+import { errorDetails } from "../utils/log-operation.js";
+
 const requirePermissions = (
   role: OrganizationRole,
   ...permissions: PERMISSIONS[]
@@ -123,6 +126,7 @@ export const sendMessage = async (
     done: false,
   };
   generations.set(generationId, state);
+  logger.info(JSON.stringify({ generationId, conversationId: conversation.id, userId: signedInUserId, organizationId }), "Generation queued");
   void runGeneration(input, conversation.id, generationId, state);
   return { message, generationId };
 };
@@ -194,6 +198,8 @@ async function runGeneration(
   generationId: string,
   state: GenerationState,
 ) {
+  const startedAt = performance.now();
+  logger.info(JSON.stringify({ generationId, conversationId, organizationId: state.organizationId }), "Generation started");
   const publish = (event: GenerationEvent) => {
     state.events.push(event);
     for (const wake of state.listeners) wake();
@@ -256,6 +262,7 @@ async function runGeneration(
         finishReason: result.finishReason,
       },
     });
+    logger.info(JSON.stringify({ generationId, conversationId, durationMs: Math.round(performance.now() - startedAt), inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens }), "Generation completed");
     publish({
       type: "finish",
       generationId,
@@ -265,6 +272,7 @@ async function runGeneration(
       latencyMs: result.latencyMs,
     });
   } catch (error) {
+    logger.error(JSON.stringify({ generationId, conversationId, durationMs: Math.round(performance.now() - startedAt), ...errorDetails(error) }), "Generation failed");
     publish({
       type: "error",
       generationId,
@@ -280,12 +288,15 @@ async function runGeneration(
         message: error instanceof Error ? error.message : "Generation failed",
       });
     } catch (persistenceError) {
-      console.error("Failed to record generation failure", persistenceError);
+      logger.error(JSON.stringify({ generationId, ...errorDetails(persistenceError) }), "Failed to record generation failure");
     }
   } finally {
     state.done = true;
     for (const wake of state.listeners) wake();
-    setTimeout(() => generations.delete(generationId), 300000).unref();
+    setTimeout(() => {
+      generations.delete(generationId);
+      logger.debug(JSON.stringify({ generationId }), "Generation buffer expired");
+    }, 300000).unref();
   }
 }
 

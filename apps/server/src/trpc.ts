@@ -33,7 +33,8 @@ export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (!membership) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Your account, workspace, or membership is unavailable or inactive",
+      message:
+        "Your account, workspace, or membership is unavailable or inactive",
     });
   }
   return next({

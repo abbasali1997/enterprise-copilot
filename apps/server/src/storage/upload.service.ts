@@ -12,13 +12,16 @@ import { s3Client } from "./s3.client.js";
 import type { UploadInput, UploadResult } from "./storage.types.js";
 import { TRPCError } from "@trpc/server";
 
+import { logOperation } from "../utils/log-operation.js";
+import { logger } from "../utils/logger.js";
+
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 export const BUCKET = process.env.S3_BUCKET?.trim() ?? "enterprise-copilot";
 
 /** Uploads to the configured bucket; an existing object at the same key is replaced. */
 export const uploadToStorage = async (
   input: UploadInput,
-): Promise<UploadResult> => {
+): Promise<UploadResult> => logOperation("storage.upload", { contentLength: input.contentLength }, async () => {
   if (!input.key.trim() || Buffer.byteLength(input.key, "utf8") > 1024) {
     throw new Error("Upload key must contain 1 to 1024 UTF-8 bytes");
   }
@@ -67,6 +70,7 @@ export const uploadToStorage = async (
       : "BINARY";
 
   const attachment = await createAttachment({
+    organizationId: input.organizationId,
     key: input.key,
     name: input.name ?? input.key.split("/").filter(Boolean).pop() ?? input.key,
     type,
@@ -75,6 +79,7 @@ export const uploadToStorage = async (
     source: `s3://${BUCKET}/${input.key}`,
   });
 
+  logger.info(JSON.stringify({ attachmentId: attachment.id, fileSize }), "Storage attachment created");
   return {
     attachmentId: attachment.id,
     bucket: BUCKET,
@@ -82,13 +87,14 @@ export const uploadToStorage = async (
     etag: result.ETag,
     versionId: result.VersionId,
   };
-};
+});
 
 export const deleteFromStorage = async (input: {
   attachmentId: string;
-}): Promise<void> => {
+}): Promise<void> => logOperation("storage.delete", { attachmentId: input.attachmentId }, async () => {
   const attachment = await findAttachmentById(input.attachmentId);
   if (!attachment) {
+    logger.info(JSON.stringify({ attachmentId: input.attachmentId }), "Storage deletion skipped: attachment absent");
     return;
   }
 
@@ -112,7 +118,7 @@ export const deleteFromStorage = async (input: {
   );
 
   await deleteAttachment(attachment.id);
-};
+});
 
 const getBodySize = (body: NonNullable<PutObjectCommandInput["Body"]>) =>
   typeof body === "string"

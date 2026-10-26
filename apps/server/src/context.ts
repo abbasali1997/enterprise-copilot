@@ -1,8 +1,12 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import { randomUUID } from "node:crypto";
+import { logger } from "./utils/logger.js";
+import { errorDetails } from "./utils/log-operation.js";
 import { verifyToken } from "@enterprise/auth";
 
 export function createContext({ req, res }: CreateExpressContextOptions) {
-  const anonymousContext = { req, res, user: null };
+  const requestId: string = res.locals.requestId ?? randomUUID();
+  const anonymousContext = { req, res, requestId, user: null };
   let authHeader = req.headers.authorization;
 
   if (!authHeader && req.headers.accept?.includes("text/event-stream")) {
@@ -11,6 +15,7 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
       if (typeof params.token === "string")
         authHeader = `Bearer ${params.token}`;
     } catch {
+      logger.warn(JSON.stringify({ requestId, reason: "Malformed subscription connection parameters" }), "Authentication");
       return anonymousContext;
     }
   }
@@ -19,7 +24,10 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
 
   const match = /^Bearer\s+(\S+)$/i.exec(authHeader.trim());
   const token = match?.[1];
-  if (!token) return anonymousContext;
+  if (!token) {
+    logger.warn(JSON.stringify({ requestId, reason: "Malformed authorization header" }), "Authentication");
+    return anonymousContext;
+  }
 
   try {
     const jwtPayload = verifyToken(token);
@@ -27,6 +35,7 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
     return {
       req,
       res,
+      requestId,
       user: {
         id: jwtPayload.sub,
         organizationId: jwtPayload.organizationId,
@@ -40,9 +49,11 @@ export function createContext({ req, res }: CreateExpressContextOptions) {
         error.name,
       )
     ) {
+      logger.warn(JSON.stringify({ requestId, ...errorDetails(error) }), "Authentication");
       // Authentication is optional here; protectedProcedure enforces it.
       return anonymousContext;
     }
+    logger.error(JSON.stringify({ requestId, ...errorDetails(error) }), "Authentication context failed");
     // Configuration and unexpected server failures must remain visible.
     throw error;
   }
