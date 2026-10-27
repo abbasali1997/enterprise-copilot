@@ -239,6 +239,9 @@ importers:
       '@enterprise/llm':
         specifier: workspace:*
         version: link:../../packages/llm
+      '@enterprise/worker':
+        specifier: workspace:*
+        version: link:../worker
       '@trpc/server':
         specifier: ^11.19.0
         version: 11.19.0(typescript@7.0.2)
@@ -382,6 +385,9 @@ importers:
       bullmq:
         specifier: ^6.3.10
         version: 6.3.10(ioredis@6.0.0)(pg@8.23.1)
+      chalk:
+        specifier: ^6.0.1
+        version: 6.0.1
       dotenv:
         specifier: ^18.0.5
         version: 18.0.5

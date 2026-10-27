@@ -18,6 +18,7 @@
     "@enterprise/auth": "workspace:*",
     "@enterprise/db": "workspace:*",
     "@enterprise/llm": "workspace:*",
+    "@enterprise/worker": "workspace:*",
     "@trpc/server": "^11.19.0",
     "aws-sdk": "^2.1693.0",
     "bullmq": "^6.3.10",

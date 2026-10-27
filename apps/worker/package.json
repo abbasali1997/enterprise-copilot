@@ -1,10 +1,14 @@
 {
-  "name": "worker",
+  "name": "@enterprise/worker",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch index.ts",
+    "queue:drain": "tsx src/queue-cleanup.ts drain",
+    "queue:clean:completed": "tsx src/queue-cleanup.ts completed",
+    "queue:clean:failed": "tsx src/queue-cleanup.ts failed",
+    "queue:obliterate": "tsx src/queue-cleanup.ts obliterate",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,6 +19,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",
     "bullmq": "^6.3.10",
+    "chalk": "^6.0.1",
     "dotenv": "^18.0.5",
     "ioredis": "^6.0.0"
   }
