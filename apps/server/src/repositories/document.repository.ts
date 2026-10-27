@@ -1,4 +1,4 @@
-import { type DbClient, prisma } from "@enterprise/db";
+import { type DbClient, Prisma, prisma } from "@enterprise/db";
 import type { CreateAttachmentInputType } from "../types/attachment.type.js";
 
 export const createDocumentAttachment = (
@@ -29,3 +29,8 @@ export const getDocumentById = (id: string, db: DbClient = prisma) =>
       id: id,
     },
   });
+
+export const updateManyDocuments = (
+  args: Prisma.AttachmentUpdateManyArgs,
+  db: DbClient = prisma,
+) => db.attachment.updateMany(args);

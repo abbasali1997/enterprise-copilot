@@ -1,4 +1,5 @@
 import { Queue } from "bullmq";
+import type { FinalizeDocumentJob } from "../job-inputs.js";
 import { QUEUE_NAMES } from "../queue.constants.js";
 import { REDIS_CONNECTION } from "../redis.js";
 import { logger } from "../utils/logger.js";
@@ -8,7 +9,7 @@ const connection = REDIS_CONNECTION.duplicate({
   retryStrategy: () => null,
 });
 
-export const documentQueue = new Queue(QUEUE_NAMES.documents, {
+export const documentQueue = new Queue<FinalizeDocumentJob>(QUEUE_NAMES.documents, {
   connection: connection,
   defaultJobOptions: {
     attempts: 1,
@@ -18,7 +19,7 @@ export const documentQueue = new Queue(QUEUE_NAMES.documents, {
 });
 
 connection.on("error", (error) =>
-  logger.error(error.message, "LLM queue producer"),
+  logger.error(error.message, "Document queue producer"),
 );
 
 documentQueue.on("error", (error) =>

@@ -1,5 +1,6 @@
 import { can, type OrganizationRole, PERMISSIONS } from "@enterprise/auth";
 import { randomUUID } from "node:crypto";
+import { documentQueue } from "@enterprise/worker/queues";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -23,6 +24,7 @@ import {
   createDocumentAttachment,
   getDocumentById,
   getDocumentList,
+  updateManyDocuments,
 } from "../repositories/document.repository.js";
 
 const PRESIGNED_URL_EXPIRY_SECONDS = 5 * 60;
@@ -131,10 +133,9 @@ export const finalizeUpload = async (
         });
       }
 
+      let attachment: Awaited<ReturnType<typeof createDocumentAttachment>>;
       try {
-        // Send job to worker queue to parse document
-
-        return await createDocumentAttachment({
+        attachment = await createDocumentAttachment({
           organizationId,
           key: input.key,
           name: input.name,
@@ -161,6 +162,38 @@ export const finalizeUpload = async (
         }
         throw error;
       }
+
+      try {
+        await documentQueue.add(
+          "finalize-upload",
+          { documentId: attachment.id, userId, organizationId },
+          { jobId: attachment.id },
+        );
+      } catch (error) {
+        // Retain the upload: enqueue may have succeeded before a connection error.
+        try {
+          await updateManyDocuments({
+            where: { id: attachment.id, organizationId, status: "UPLOADED" },
+            data: { status: "FAILED" },
+          });
+        } catch (statusError) {
+          logger.error(
+            JSON.stringify({
+              documentId: attachment.id,
+              organizationId,
+              ...errorDetails(statusError),
+            }),
+            "Failed to mark document enqueue as failed",
+          );
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not start document processing",
+          cause: error,
+        });
+      }
+
+      return attachment;
     },
   );
 
@@ -180,7 +213,7 @@ export const viewUpload = async (
   if (!bucket) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "S3_BUCKET must be configured before uploading",
+      message: "S3_BUCKET must be configured before viewing",
     });
   }
 

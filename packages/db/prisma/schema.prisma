@@ -246,5 +246,22 @@ model Attachment {
   fileSize       Int
   source         String
 
-  organization Organization @relation(references: [id], fields: [organizationId], onDelete: Cascade)
+  organization Organization    @relation(references: [id], fields: [organizationId], onDelete: Cascade)
+  chunks       DocumentChunk[]
+}
+
+model DocumentChunk {
+  id         String                 @id @default(uuid())
+  documentId String
+  pageNumber Int
+  chunkIndex Int
+  content    String
+  embedding  Unsupported("vector")?
+  modelName  String                 @default("gemini-embedding-2")
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  document Attachment @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber, chunkIndex])
 }
