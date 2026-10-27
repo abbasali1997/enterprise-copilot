@@ -14,8 +14,7 @@ import type {
   createUploadInputSchema,
   finalizeUploadInputSchema,
 } from "../schemas/document.schema.js";
-import { s3Client, s3PresigningClient } from "../storage/s3.client.js";
-import { BUCKET } from "../storage/upload.service.js";
+import { BUCKET, s3Client, s3PresigningClient } from "@enterprise/storage";
 
 import { errorDetails, logOperation } from "../utils/log-operation.js";
 import { logger } from "../utils/logger.js";

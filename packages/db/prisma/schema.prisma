@@ -79,6 +79,19 @@ enum LlmRequestStatus {
   CANCELLED
 }
 
+enum AttachmentType {
+  BINARY
+  IMAGE
+  DOCUMENT
+}
+
+enum AttchmentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -222,17 +235,12 @@ model LlmRequest {
   completedAt DateTime?
 }
 
-enum AttachmentType {
-  BINARY
-  IMAGE
-  DOCUMENT
-}
-
 model Attachment {
-  id             String         @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
-  key            String         @unique
+  key            String          @unique
   name           String
+  status         AttchmentStatus @default(UPLOADED)
   type           AttachmentType
   mimeType       String
   fileSize       Int

@@ -27,6 +27,7 @@ COPY packages/db/package.json ./packages/db/package.json
 COPY packages/llm/package.json ./packages/llm/package.json
 COPY packages/auth/package.json ./packages/auth/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/storage/package.json ./packages/storage/package.json
 
 RUN pnpm install --frozen-lockfile
 
