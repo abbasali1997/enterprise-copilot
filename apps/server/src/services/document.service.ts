@@ -1,6 +1,7 @@
-import { can, PERMISSIONS, type OrganizationRole } from "@enterprise/auth";
+import { can, type OrganizationRole, PERMISSIONS } from "@enterprise/auth";
 import { randomUUID } from "node:crypto";
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -16,7 +17,8 @@ import type {
 import { s3Client, s3PresigningClient } from "../storage/s3.client.js";
 import { BUCKET } from "../storage/upload.service.js";
 
-import { logOperation } from "../utils/log-operation.js";
+import { errorDetails, logOperation } from "../utils/log-operation.js";
+import { logger } from "../utils/logger.js";
 
 import {
   createDocumentAttachment,
@@ -130,15 +132,36 @@ export const finalizeUpload = async (
         });
       }
 
-      return createDocumentAttachment({
-        organizationId,
-        key: input.key,
-        name: input.name,
-        type: "DOCUMENT",
-        mimeType: object.ContentType,
-        fileSize: size,
-        source: `s3://${BUCKET}/${input.key}`,
-      });
+      try {
+        // Send job to worker queue to parse document
+
+        return await createDocumentAttachment({
+          organizationId,
+          key: input.key,
+          name: input.name,
+          type: "DOCUMENT",
+          mimeType: object.ContentType,
+          fileSize: size,
+          source: `s3://${BUCKET}/${input.key}`,
+        });
+      } catch (error) {
+        try {
+          await s3Client.send(
+            new DeleteObjectCommand({ Bucket: BUCKET, Key: input.key }),
+          );
+        } catch (cleanupError) {
+          logger.error(
+            JSON.stringify({
+              operation: "document.finalizeUpload.cleanup",
+              userId,
+              organizationId,
+              ...errorDetails(cleanupError),
+            }),
+            "Failed to delete upload after attachment creation failed",
+          );
+        }
+        throw error;
+      }
     },
   );
 
