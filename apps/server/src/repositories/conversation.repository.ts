@@ -26,10 +26,22 @@ export const createConversation = (
     },
   });
 
-export const createMessage = (
-  data: Prisma.MessageUncheckedCreateInput,
-  db: DbClient = prisma,
-) => db.message.create({ data });
+export const createMessage = async (data: Prisma.MessageUncheckedCreateInput) =>
+  prisma.$transaction(async (tx) => {
+    const newMessage = await tx.message.create({ data });
+
+    // Update conversation lastMessageAt
+    await tx.conversation.update({
+      where: {
+        id: newMessage.conversationId,
+      },
+      data: {
+        lastMessageAt: new Date(),
+      },
+    });
+
+    return newMessage;
+  });
 
 export const findUserConversation = (
   conversationId: string,

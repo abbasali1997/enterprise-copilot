@@ -12,21 +12,19 @@ import {
 } from "../repositories/conversation.repository.js";
 import {
   createLlmRequest,
-  completeLlmRequest,
   failLlmRequest,
 } from "../repositories/llm-request.repository.js";
 import { TRPCError } from "@trpc/server";
 import { Prisma, prisma } from "@enterprise/db";
-import { llmGateway } from "../lib/llm.js";
 import { randomUUID } from "node:crypto";
-import {
-  LLMProviderError,
-  type LLMStreamEvent,
-  type LLMGenerateResult,
-} from "@enterprise/llm";
 
 import { logger } from "../utils/logger.js";
-import { errorDetails } from "../utils/log-operation.js";
+import { llmInteractiveQueue } from "@enterprise/worker/queues/llm-interactive";
+import {
+  generationStreamKey,
+  type GenerationEvent,
+} from "@enterprise/worker/generation-events";
+import { REDIS_CONNECTION } from "@enterprise/worker/redis";
 
 const requirePermissions = (
   role: OrganizationRole,
@@ -41,7 +39,13 @@ const requirePermissions = (
 };
 
 export const getAvailableModels = (role: OrganizationRole) => {
-  requirePermissions(role, PERMISSIONS.MODEL_VIEW);
+  if (!can(role, PERMISSIONS.MODEL_VIEW)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to view models",
+    });
+  }
+
   return [...OPENAI_MODELS, ...GEMINI_MODELS].filter((model) => model.enabled);
 };
 
@@ -50,7 +54,13 @@ export const getConversationList = async (
   organizationId: string,
   role: OrganizationRole,
 ) => {
-  requirePermissions(role, PERMISSIONS.CONVERSATION_READ_OWN);
+  if (!can(role, PERMISSIONS.CONVERSATION_READ_OWN)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to read conversations",
+    });
+  }
+
   return prisma.conversation.findMany({
     where: {
       organizationId,
@@ -83,10 +93,12 @@ export const sendMessage = async (
       ? PERMISSIONS.CONVERSATION_READ_OWN
       : PERMISSIONS.CONVERSATION_CREATE,
   );
+
   // If conversationId not provided then create a new conversation first
   let conversation;
   if (!input.conversationId) {
     const title = createFallbackTitle(input.content);
+
     conversation = await createConversation({
       title,
       organizationId,
@@ -98,6 +110,7 @@ export const sendMessage = async (
       signedInUserId,
       organizationId,
     );
+
     if (!conversation) {
       throw new TRPCError({
         code: "NOT_FOUND",
@@ -105,12 +118,14 @@ export const sendMessage = async (
       });
     }
   }
+
   const message = await createMessage({
     conversationId: conversation.id,
     userId: signedInUserId,
     role: "USER",
     content: input.content,
   });
+
   const generationId = randomUUID();
   await createLlmRequest({
     id: generationId,
@@ -118,36 +133,44 @@ export const sendMessage = async (
     provider: input.provider,
     model: input.model,
   });
-  const state: GenerationState = {
-    userId: signedInUserId,
-    organizationId,
-    events: [],
-    listeners: new Set(),
-    done: false,
-  };
-  generations.set(generationId, state);
-  logger.info(JSON.stringify({ generationId, conversationId: conversation.id, userId: signedInUserId, organizationId }), "Generation queued");
-  void runGeneration(input, conversation.id, generationId, state);
+
+  try {
+    await llmInteractiveQueue.add(
+      "generate-chat",
+      {
+        generationId,
+        conversationId: conversation.id,
+        userId: signedInUserId,
+        organizationId,
+        provider: input.provider,
+        model: input.model,
+        content: input.content,
+      },
+      { jobId: generationId },
+    );
+  } catch (error) {
+    await failLlmRequest({
+      id: generationId,
+      code: "QUEUE_UNAVAILABLE",
+      message: "Could not enqueue response generation",
+    });
+
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Could not start response generation",
+      cause: error,
+    });
+  }
+
+  logger.info(
+    JSON.stringify({ generationId, conversationId: conversation.id }),
+    "Generation queued",
+  );
+
   return { message, generationId };
 };
 
-export type GenerationEvent =
-  | LLMStreamEvent
-  | {
-      type: "error";
-      generationId: string;
-      message: string;
-    };
-
-type GenerationState = {
-  userId: string;
-  organizationId: string;
-  events: GenerationEvent[];
-  listeners: Set<() => void>;
-  done: boolean;
-};
-
-const generations = new Map<string, GenerationState>();
+export type { GenerationEvent } from "@enterprise/worker/generation-events";
 
 export async function* onGeneration(
   generationId: string,
@@ -157,149 +180,132 @@ export async function* onGeneration(
   lastEventId?: string | null,
   signal?: AbortSignal,
 ) {
-  requirePermissions(role, PERMISSIONS.CHAT_USE, PERMISSIONS.CONVERSATION_READ_OWN);
-  const state = generations.get(generationId);
-  if (
-    !state ||
-    state.userId !== userId ||
-    state.organizationId !== organizationId
-  )
+  if (!can(role, PERMISSIONS.CHAT_USE)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to use the chat",
+    });
+  }
+
+  if (!can(role, PERMISSIONS.CONVERSATION_READ_OWN)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to read a conversation",
+    });
+  }
+
+  const request = await prisma.llmRequest.findUnique({
+    where: { id: generationId },
+  });
+  const conversation = request?.conversationId
+    ? await findUserConversation(request.conversationId, userId, organizationId)
+    : null;
+  if (!request || !conversation) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Generation not found" });
-  let cursor = lastEventId ? Number(lastEventId) : 0;
-  if (
-    !Number.isSafeInteger(cursor) ||
-    cursor < 0 ||
-    cursor > state.events.length
-  )
+  }
+  if (lastEventId && !/^\d+-\d+$/.test(lastEventId)) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Invalid event cursor",
     });
-  while (!signal?.aborted) {
-    while (cursor < state.events.length)
-      yield { id: String(cursor + 1), event: state.events[cursor++]! };
-    if (state.done) return;
-    await new Promise<void>((resolve) => {
-      const wake = () => {
-        state.listeners.delete(wake);
-        signal?.removeEventListener("abort", wake);
-        resolve();
-      };
-      state.listeners.add(wake);
-      signal?.addEventListener("abort", wake, { once: true });
-      if (signal?.aborted || state.done || cursor < state.events.length) wake();
-    });
   }
-}
-
-async function runGeneration(
-  input: SendMessageInputType,
-  conversationId: string,
-  generationId: string,
-  state: GenerationState,
-) {
-  const startedAt = performance.now();
-  logger.info(JSON.stringify({ generationId, conversationId, organizationId: state.organizationId }), "Generation started");
-  const publish = (event: GenerationEvent) => {
-    state.events.push(event);
-    for (const wake of state.listeners) wake();
-  };
+  let cursor = lastEventId ?? "0-0";
+  // Blocking reads need their own connection so one subscriber cannot block others.
+  const reader = REDIS_CONNECTION.duplicate({
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null,
+  });
+  reader.on("error", () => {});
+  const abort = () => reader.disconnect();
+  signal?.addEventListener("abort", abort, { once: true });
   try {
-    const result: LLMGenerateResult = {
-      generationId,
-      provider: input.provider,
-      model: input.model,
-      text: "",
-      usage: {},
-      finishReason: "unknown",
-      latencyMs: 0,
-    };
-    for await (const event of generateChatResponse({
-      provider: input.provider,
-      model: input.model,
-      conversationId,
-      generationId,
-      messages: [
-        { role: "system", content: "You are a helpful enterprise assistant." },
-        { role: "user", content: input.content },
-      ],
-    })) {
-      if (event.type !== "finish") publish(event);
-      result.generationId = event.generationId;
-      switch (event.type) {
-        case "start":
-          result.provider = event.provider;
-          result.model = event.model;
-          result.providerResponseId = event.providerResponseId;
-          break;
-        case "text-delta":
-          result.text += event.delta;
-          break;
-        case "usage":
-          result.usage = event.usage;
-          break;
-        case "finish":
-          result.providerResponseId = event.providerResponseId;
-          result.model = event.model;
-          result.finishReason = event.finishReason;
-          result.latencyMs = event.latencyMs;
-          break;
+    while (!signal?.aborted) {
+      const streams = await reader.xread(
+        "COUNT",
+        100,
+        "BLOCK",
+        1000,
+        "STREAMS",
+        generationStreamKey(generationId),
+        cursor,
+      );
+      if (streams) {
+        for (const [, entries] of streams) {
+          for (const [id, fields] of entries) {
+            const event = JSON.parse(fields[1]!) as GenerationEvent;
+            cursor = id;
+            yield { id, event };
+            if (event.type === "finish" || event.type === "error") return;
+          }
+        }
+      } else {
+        // Recover a terminal event if the worker died after committing to the DB,
+        // or if the Redis replay buffer has expired.
+        const latest = await prisma.llmRequest.findUnique({
+          where: { id: generationId },
+        });
+        if (latest?.status === "COMPLETED") {
+          // Recheck the stream: completion may have raced the previous read.
+          const pending = await reader.xrange(
+            generationStreamKey(generationId),
+            `(${cursor}`,
+            "+",
+            "COUNT",
+            1,
+          );
+          if (pending.length) continue;
+          if (!(await reader.exists(generationStreamKey(generationId)))) {
+            yield {
+              id: cursor,
+              event: {
+                type: "error" as const,
+                generationId,
+                message:
+                  "Response stream expired. Reload the conversation to view the saved response.",
+              },
+            };
+            return;
+          }
+          yield {
+            id: cursor,
+            event: {
+              type: "finish" as const,
+              generationId,
+              model: latest.model,
+              providerResponseId: latest.providerResponseId ?? undefined,
+              finishReason: (latest.finishReason ?? "unknown") as Extract<
+                GenerationEvent,
+                { type: "finish" }
+              >["finishReason"],
+              latencyMs: latest.latencyMs ?? 0,
+            },
+          };
+          return;
+        }
+        if (
+          !latest ||
+          latest.status === "FAILED" ||
+          latest.status === "CANCELLED"
+        ) {
+          yield {
+            id: cursor,
+            event: {
+              type: "error" as const,
+              generationId,
+              message: "Response generation failed",
+            },
+          };
+          return;
+        }
       }
     }
-    await createMessage({
-      id: result.generationId,
-      conversationId,
-      role: "ASSISTANT",
-      status: "COMPLETED",
-      content: result.text,
-      model: result.model,
-      inputTokens: result.usage.inputTokens,
-      outputTokens: result.usage.outputTokens,
-      latencyMs: result.latencyMs,
-      metadata: {
-        provider: result.provider,
-        providerResponseId: result.providerResponseId ?? null,
-        finishReason: result.finishReason,
-      },
-    });
-    logger.info(JSON.stringify({ generationId, conversationId, durationMs: Math.round(performance.now() - startedAt), inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens }), "Generation completed");
-    publish({
-      type: "finish",
-      generationId,
-      model: result.model,
-      providerResponseId: result.providerResponseId,
-      finishReason: result.finishReason,
-      latencyMs: result.latencyMs,
-    });
   } catch (error) {
-    logger.error(JSON.stringify({ generationId, conversationId, durationMs: Math.round(performance.now() - startedAt), ...errorDetails(error) }), "Generation failed");
-    publish({
-      type: "error",
-      generationId,
-      message: "Response generation failed",
-    });
-    try {
-      await failLlmRequest({
-        id: generationId,
-        code:
-          error instanceof LLMProviderError
-            ? error.code
-            : "INTERNAL_SERVER_ERROR",
-        message: error instanceof Error ? error.message : "Generation failed",
-      });
-    } catch (persistenceError) {
-      logger.error(JSON.stringify({ generationId, ...errorDetails(persistenceError) }), "Failed to record generation failure");
-    }
+    if (!signal?.aborted) throw error;
   } finally {
-    state.done = true;
-    for (const wake of state.listeners) wake();
-    setTimeout(() => {
-      generations.delete(generationId);
-      logger.debug(JSON.stringify({ generationId }), "Generation buffer expired");
-    }, 300000).unref();
+    signal?.removeEventListener("abort", abort);
+    reader.disconnect();
   }
 }
-
 const createFallbackTitle = (message: string) => {
   const trimmed = message.trim();
   if (trimmed.length <= 50) {
@@ -314,18 +320,26 @@ export const getConversation = async (
   organizationId: string,
   role: OrganizationRole,
 ) => {
-  requirePermissions(role, PERMISSIONS.CONVERSATION_READ_OWN);
+  if (!can(role, PERMISSIONS.CONVERSATION_READ_OWN)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to read a conversation",
+    });
+  }
+
   const conversation = await findUserConversation(
     conversationId,
     signedInUserId,
     organizationId,
   );
+
   if (!conversation) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Conversation not found",
     });
   }
+
   return conversation;
 };
 
@@ -335,7 +349,13 @@ export const renameConversation = async (
   organizationId: string,
   role: OrganizationRole,
 ) => {
-  requirePermissions(role, PERMISSIONS.CONVERSATION_UPDATE_OWN);
+  if (!can(role, PERMISSIONS.CONVERSATION_UPDATE_OWN)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to update a conversation",
+    });
+  }
+
   try {
     return await renameUserConversation(
       input.conversationId,
@@ -356,62 +376,3 @@ export const renameConversation = async (
     throw error;
   }
 };
-
-async function* generateChatResponse(input: {
-  generationId: string;
-  provider: SendMessageInputType["provider"];
-  model: SendMessageInputType["model"];
-  conversationId: string;
-  messages: {
-    role: "system" | "user" | "assistant";
-    content: string;
-  }[];
-}) {
-  const generationId = input.generationId;
-  const provider = input.provider;
-  const model = input.model;
-  let usage:
-    | {
-        inputTokens?: number;
-        outputTokens?: number;
-        totalTokens?: number;
-      }
-    | undefined;
-  try {
-    for await (const event of llmGateway.stream({
-      generationId,
-      provider,
-      model,
-      messages: input.messages,
-    })) {
-      if (event.type === "usage") {
-        usage = event.usage;
-      }
-      if (event.type === "finish") {
-        await completeLlmRequest({
-          id: generationId,
-          providerResponseId: event.providerResponseId,
-          inputTokens: usage?.inputTokens,
-          outputTokens: usage?.outputTokens,
-          totalTokens: usage?.totalTokens,
-          latencyMs: event.latencyMs,
-          finishReason: event.finishReason,
-        });
-      }
-      /*
-       * Server/tRPC only receives
-       * normalized events.
-       */
-      yield event;
-    }
-  } catch (error) {
-    if (error instanceof LLMProviderError) {
-      await failLlmRequest({
-        id: generationId,
-        code: error.code,
-        message: error.message,
-      });
-    }
-    throw error;
-  }
-}

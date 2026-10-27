@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@enterprise/auth": "workspace:*",
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
@@ -21,11 +22,12 @@
     "@trpc/tanstack-react-query": "^11.19.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.4",
+    "remark-gfm": "^4.0.1",
     "superjson": "^2.2.6",
     "tailwindcss": "^4.3.3",
-    "zod": "^4.6.5",
-    "@enterprise/auth": "workspace:*"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

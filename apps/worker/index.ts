@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { logger } from "./src/utils/logger.js";
+import { prisma } from "@enterprise/db";
 
 config({
   path: fileURLToPath(new URL("../../.env", import.meta.url)),
@@ -35,6 +36,8 @@ const shutdown = async (reason: string, exitCode = 0) => {
         logger.error(`Shutdown failed: ${String(result.reason)}`);
       }
     }
+
+    await prisma.$disconnect();
     logger.info("Shutdown complete");
   } finally {
     connection.disconnect();
@@ -42,8 +45,12 @@ const shutdown = async (reason: string, exitCode = 0) => {
   }
 };
 
-process.once("SIGINT", () => { void shutdown("SIGINT"); });
-process.once("SIGTERM", () => { void shutdown("SIGTERM"); });
+process.once("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+process.once("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
 
 for (const worker of workers) {
   void worker.run().catch(async (error: unknown) => {

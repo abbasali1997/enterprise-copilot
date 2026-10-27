@@ -109,7 +109,7 @@ const ConversationChat = ({
           id: data.generationId,
           role: "ASSISTANT",
           content: "",
-          status: "STREAMING",
+          status: "PENDING",
           model: _input.model,
           errorMessage: null,
         },
@@ -129,6 +129,7 @@ const ConversationChat = ({
           ),
         );
       };
+      subscriptionRef.current?.unsubscribe();
       subscriptionRef.current = trpcClient.chat.onGeneration.subscribe(
         { generationId: data.generationId },
         {
@@ -137,7 +138,11 @@ const ConversationChat = ({
               setMessages((current) =>
                 (current ?? []).map((message) =>
                   message.id === data.generationId
-                    ? { ...message, content: message.content + event.delta }
+                    ? {
+                        ...message,
+                        status: "STREAMING",
+                        content: message.content + event.delta,
+                      }
                     : message,
                 ),
               );
@@ -236,7 +241,7 @@ const ConversationChat = ({
                 role="status"
                 className="my-2 text-sm text-gray-500 dark:text-slate-400"
               >
-                Generating response?
+                Generating response...
               </p>
             )}
           </div>

@@ -1,5 +1,10 @@
 import OpenAI from "openai";
-import type { LLMFinishReason, LLMMessage, LLMUsage } from "../types.js";
+import type {
+  LLMFinishReason,
+  LLMMessage,
+  LLMUsage,
+  LLMStreamEvent,
+} from "../types.js";
 import type { LLMProvider, LLMProviderInput } from "../provider.js";
 import { LLMProviderError } from "../errors.js";
 
@@ -63,8 +68,7 @@ export class OpenAIProvider implements LLMProvider {
     }
   }
 
-  // @ts-ignore
-  async *stream(input: LLMProviderInput) {
+  async *stream(input: LLMProviderInput): AsyncGenerator<LLMStreamEvent> {
     const startedAt = performance.now();
 
     let providerResponseId: string | undefined;

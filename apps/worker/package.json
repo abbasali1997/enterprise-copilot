@@ -10,7 +10,7 @@
     "queue:clean:failed": "tsx src/queue-cleanup.ts failed",
     "queue:obliterate": "tsx src/queue-cleanup.ts obliterate",
     "type-check": "tsc --noEmit -p tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx --test tests/generation.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,13 @@
     "bullmq": "^6.3.10",
     "chalk": "^6.0.1",
     "dotenv": "^18.0.5",
-    "ioredis": "^6.0.0"
+    "ioredis": "^6.0.0",
+    "@enterprise/db": "workspace:*",
+    "@enterprise/llm": "workspace:*"
+  },
+  "exports": {
+    "./queues/llm-interactive": "./src/queues/llm-interactive.queue.ts",
+    "./generation-events": "./src/generation-events.ts",
+    "./redis": "./src/redis.ts"
   }
 }
