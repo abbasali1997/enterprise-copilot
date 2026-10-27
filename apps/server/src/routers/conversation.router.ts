@@ -8,7 +8,6 @@ import {
 } from "../schemas/conversation.schema.js";
 import {
   onGeneration,
-  getAvailableModels,
   getConversationList,
   getConversation,
   renameConversation,
@@ -16,8 +15,6 @@ import {
 } from "../services/conversation.service.js";
 
 export const conversationRouter = router({
-  models: tenantProcedure.query(({ ctx }) => getAvailableModels(ctx.role)),
-
   get: tenantProcedure
     .input(getConversationInputSchema)
     .query(({ input, ctx }) =>

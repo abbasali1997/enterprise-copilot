@@ -36,7 +36,7 @@ const ConversationChat = ({
 
   const { data: models = [] } = useQuery({
     queryKey: ["conversation", "models"],
-    queryFn: () => trpcClient.conversation.models.query(),
+    queryFn: () => trpcClient.assistant.models.query(),
   });
 
   const { data: currentConversation } = useQuery<{ messages: MessageType[] }>({
