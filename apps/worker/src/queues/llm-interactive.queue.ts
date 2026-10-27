@@ -2,7 +2,7 @@ import { Queue } from "bullmq";
 import { QUEUE_NAMES } from "../queue.constants.js";
 import { REDIS_CONNECTION } from "../redis.js";
 import { logger } from "../utils/logger.js";
-import type { ChatGenerationJob } from "../generation-events.js";
+import type { ChatGenerationJob } from "../job-inputs.js";
 
 // Producers fail promptly if Redis is unavailable; workers keep retrying.
 const connection = REDIS_CONNECTION.duplicate({

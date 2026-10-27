@@ -1,15 +1,5 @@
-import type { LLMStreamEvent, LLMProviderName } from "@enterprise/llm";
+import type { LLMStreamEvent } from "@enterprise/llm";
 import { REDIS_CONNECTION } from "./redis.js";
-
-export type ChatGenerationJob = {
-  generationId: string;
-  conversationId: string;
-  userId: string;
-  organizationId: string;
-  provider: LLMProviderName;
-  model: string;
-  content: string;
-};
 
 export type GenerationEvent =
   | LLMStreamEvent

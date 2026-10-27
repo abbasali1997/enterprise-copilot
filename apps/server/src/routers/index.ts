@@ -5,6 +5,7 @@ import { healthRouter } from "./health.router.js";
 import { authRouter } from "./auth.router.js";
 import { organizationRouter } from "./organizations.router.js";
 import { conversationRouter } from "./conversation.router.js";
+import { assistantRouter } from "./assistants.router.js";
 
 export const appRouter = router({
   documents: documentRouter,
@@ -14,6 +15,7 @@ export const appRouter = router({
   organization: organizationRouter,
   conversation: conversationRouter,
   chat: conversationRouter,
+  assistant: assistantRouter,
 });
 
 export type AppRouter = typeof appRouter;

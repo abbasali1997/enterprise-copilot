@@ -1,5 +1,4 @@
 import { can, PERMISSIONS, type OrganizationRole } from "@enterprise/auth";
-import { GEMINI_MODELS, OPENAI_MODELS } from "@enterprise/llm";
 import type {
   RenameConversationInputType,
   SendMessageInputType,
@@ -19,7 +18,7 @@ import { Prisma, prisma } from "@enterprise/db";
 import { randomUUID } from "node:crypto";
 
 import { logger } from "../utils/logger.js";
-import { llmInteractiveQueue } from "@enterprise/worker/queues/llm-interactive";
+import { llmInteractiveQueue } from "@enterprise/worker/queues";
 import {
   generationStreamKey,
   type GenerationEvent,
@@ -36,17 +35,6 @@ const requirePermissions = (
       message: "You do not have permission to perform this action",
     });
   }
-};
-
-export const getAvailableModels = (role: OrganizationRole) => {
-  if (!can(role, PERMISSIONS.MODEL_VIEW)) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You do not have permission to view models",
-    });
-  }
-
-  return [...OPENAI_MODELS, ...GEMINI_MODELS].filter((model) => model.enabled);
 };
 
 export const getConversationList = async (

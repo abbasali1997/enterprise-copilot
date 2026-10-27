@@ -10,8 +10,8 @@ import { REDIS_CONNECTION } from "../redis.js";
 import {
   GENERATION_TTL_SECONDS,
   publishGenerationEvent,
-  type ChatGenerationJob,
 } from "../generation-events.js";
+import type { ChatGenerationJob } from "../job-inputs.js";
 import { processJob } from "../process-job.js";
 import { createWorker } from "./create-worker.js";
 import { logger } from "../utils/logger.js";
