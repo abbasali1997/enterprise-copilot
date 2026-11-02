@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { ThemeContext, ThemeToggle } from "@/contexts/themeContext.tsx";
 import "./sidebar.css";
-import { useTRPC } from "@/lib/trpc.ts";
+import { trpcClient, useTRPC } from "@/lib/trpc.ts";
 import { useQuery } from "@tanstack/react-query";
 
 type SidebarItemProps = {
@@ -67,10 +67,14 @@ const AppSidebar = () => {
   const theme = useContext(ThemeContext)?.theme;
   const navigate = useNavigate();
 
-  const signOut = () => {
-    auth?.setUser(null);
-    localStorage.removeItem("token");
-    navigate("/");
+  const signOut = async () => {
+    try {
+      await trpcClient.auth.logout.mutate();
+      auth?.setUser(null);
+      navigate("/");
+    } catch (error) {
+      console.error("Could not sign out:", error);
+    }
   };
   return (
     <aside

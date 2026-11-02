@@ -18,18 +18,56 @@ app.use((req, res, next) => {
   res.locals.requestId = requestId;
   res.setHeader("X-Request-ID", requestId);
   const startedAt = performance.now();
-  logger.info(JSON.stringify({ requestId, method: req.method, event: "started" }), "HTTP");
+  logger.info(
+    JSON.stringify({ requestId, method: req.method, event: "started" }),
+    "HTTP",
+  );
   res.once("finish", () => {
-    logger.info(JSON.stringify({ requestId, method: req.method, status: res.statusCode, durationMs: Math.round(performance.now() - startedAt) }), "HTTP completed");
+    logger.info(
+      JSON.stringify({
+        requestId,
+        method: req.method,
+        status: res.statusCode,
+        durationMs: Math.round(performance.now() - startedAt),
+      }),
+      "HTTP completed",
+    );
   });
   res.once("close", () => {
-    if (!res.writableFinished) logger.warn(JSON.stringify({ requestId, durationMs: Math.round(performance.now() - startedAt) }), "HTTP connection closed before completion");
+    if (!res.writableFinished)
+      logger.warn(
+        JSON.stringify({
+          requestId,
+          durationMs: Math.round(performance.now() - startedAt),
+        }),
+        "HTTP connection closed before completion",
+      );
   });
   next();
 });
 
 // Basic Middlewares
-app.use(cors());
+const allowedOrigins = (process.env.WEB_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+
+// Protect cookie-authenticated mutations against untrusted origins.
+app.use((req, res, next) => {
+  if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    const origin = req.headers.origin;
+    if (
+      req.headers["sec-fetch-site"] === "cross-site" ||
+      (origin && !allowedOrigins.includes(origin))
+    ) {
+      res.status(403).json({ error: "Untrusted request origin" });
+      return;
+    }
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,10 +95,12 @@ app.use(
 
 // Server
 logger.info("Starting HTTP server", "Server");
-app.listen(SERVER_PORT, () => {
-  logger.info(`Server is Running on PORT: ${SERVER_PORT}`);
-  logger.info(`tRPC endpoint: http://localhost:${SERVER_PORT}/trpc`);
-}).on("error", (error) => {
-  logger.error(JSON.stringify(errorDetails(error)), "HTTP server failed");
-  throw error;
-});
+app
+  .listen(SERVER_PORT, () => {
+    logger.info(`Server is Running on PORT: ${SERVER_PORT}`);
+    logger.info(`tRPC endpoint: http://localhost:${SERVER_PORT}/trpc`);
+  })
+  .on("error", (error) => {
+    logger.error(JSON.stringify(errorDetails(error)), "HTTP server failed");
+    throw error;
+  });

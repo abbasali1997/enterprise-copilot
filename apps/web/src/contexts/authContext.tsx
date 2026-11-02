@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [session, setSession] = useState(() => ({
-    token: localStorage.getItem("token"),
+    active: true,
     version: 0,
   }));
 
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isPending,
   } = useQuery<User>({
     queryKey,
-    enabled: !!session.token,
+    enabled: session.active,
     retry: false,
     staleTime: 60_000,
     queryFn: async ({ signal }) => {
@@ -42,20 +42,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         if (signal.aborted) throw error;
         console.error("Could not get authenticated user:", error);
-        if (
-          error instanceof Error &&
-          "data" in error &&
-          (error.data as { code?: string } | undefined)?.code ===
-            "UNAUTHORIZED" &&
-          localStorage.getItem("token") === session.token
-        ) {
-          localStorage.removeItem("token");
-          setSession((current) =>
-            current.version === session.version
-              ? { token: null, version: current.version + 1 }
-              : current,
-          );
-        }
         throw error;
       }
     },
@@ -63,9 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const setUser = useCallback(
     (nextUser: User | null) => {
-      if (!nextUser) localStorage.removeItem("token");
       const nextSession = {
-        token: nextUser ? localStorage.getItem("token") : null,
+        active: !!nextUser,
         version: session.version + 1,
       };
       const baseKey = trpc.auth.me.queryKey();
@@ -82,11 +67,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const unauthorized =
     error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED";
-  const user = session.token && !unauthorized ? (me ?? null) : null;
+  const user = session.active && !unauthorized ? (me ?? null) : null;
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, isLoading: !!session.token && isPending }}
+      value={{ user, setUser, isLoading: session.active && isPending }}
     >
       {children}
     </AuthContext.Provider>

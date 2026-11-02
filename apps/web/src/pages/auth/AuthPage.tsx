@@ -27,7 +27,6 @@ const AuthPage = () => {
 
   const completeAuthentication = (data: AuthenticatedResponse) => {
     setIsRedirecting(true);
-    localStorage.setItem("token", data.accessToken);
     value?.setUser({ ...data.user, organization: data.workspace });
     setTimeout(() => navigate("/home", { replace: true }), 2000);
   };
@@ -42,7 +41,6 @@ const AuthPage = () => {
     trpc.auth.login.mutationOptions({
       onSuccess: (data) => {
         if (data.status === "workspace_selection_required") {
-          localStorage.removeItem("token");
           value?.setUser(null);
           setPassword("");
           selectOrganization.reset();

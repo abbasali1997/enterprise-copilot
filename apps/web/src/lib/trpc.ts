@@ -16,16 +16,12 @@ export const trpcClient = createTRPCClient<AppRouter>({
       condition: (op) => op.type === "subscription",
       true: httpSubscriptionLink({
         url: "/trpc",
-        connectionParams: () => ({
-          token: localStorage.getItem("token") ?? "",
-        }),
+        eventSourceOptions: { withCredentials: true },
       }),
       false: httpBatchLink({
         url: "/trpc",
-        headers: () => {
-          const token = localStorage.getItem("token");
-          return token ? { Authorization: `Bearer ${token}` } : {};
-        },
+        fetch: (url, options) =>
+          fetch(url, { ...options, credentials: "include" }),
       }),
     }),
   ],

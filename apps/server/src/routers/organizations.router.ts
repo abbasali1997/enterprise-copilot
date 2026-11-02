@@ -1,4 +1,9 @@
-import { protectedProcedure, publicProcedure, router, tenantProcedure } from "../trpc.js";
+import {
+  protectedProcedure,
+  publicProcedure,
+  router,
+  tenantProcedure,
+} from "../trpc.js";
 import {
   changeOrganizationSchema,
   inviteMemberSchema,
@@ -18,6 +23,8 @@ import {
   updateOrganizationMember,
 } from "../services/organization-membership.service.js";
 
+import { authenticateResponse, setAuthCookie } from "../utils/auth-cookie.js";
+
 export const organizationRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
     listUserOrganizations(ctx.user.id),
@@ -33,14 +40,20 @@ export const organizationRouter = router({
 
   changeOrganization: protectedProcedure
     .input(changeOrganizationSchema)
-    .mutation(({ ctx, input }) => {
-      return selectOrganization(input, ctx.user?.id);
+    .mutation(async ({ ctx, input }) => {
+      return authenticateResponse(
+        ctx.res,
+        await selectOrganization(input, ctx.user?.id),
+      );
     }),
 
   selectOrganization: publicProcedure
     .input(selectOrganizationSchema)
-    .mutation(({ ctx, input }) => {
-      return selectOrganization(input, ctx.user?.id);
+    .mutation(async ({ ctx, input }) => {
+      return authenticateResponse(
+        ctx.res,
+        await selectOrganization(input, ctx.user?.id),
+      );
     }),
 
   inviteMember: tenantProcedure
@@ -57,13 +70,24 @@ export const organizationRouter = router({
 
   respondToInvite: publicProcedure
     .input(respondToInviteSchema)
-    .mutation(async ({ ctx, input }) =>
-      respondToInvitation(input, ctx.user?.id),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const result = await respondToInvitation(input, ctx.user?.id);
+      if (result.action === "accept") {
+        const { token, ...response } = result;
+        setAuthCookie(ctx.res, token);
+        return response;
+      }
+      return result;
+    }),
 
   updateMember: tenantProcedure
     .input(updateOrganizationMemberSchema)
     .mutation(({ ctx, input }) =>
-      updateOrganizationMember(input, ctx.user.id, ctx.organizationId, ctx.role),
+      updateOrganizationMember(
+        input,
+        ctx.user.id,
+        ctx.organizationId,
+        ctx.role,
+      ),
     ),
 });

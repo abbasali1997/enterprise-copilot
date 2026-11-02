@@ -29,7 +29,6 @@ function ChangeWorkspacePage() {
               query.queryKey[0].join(".") === "organization.list"
             ),
         });
-        localStorage.setItem("token", data.accessToken);
         auth?.setUser({ ...data.user, organization: data.workspace });
         setTimeout(() => navigate("/", { replace: true }), 2000);
       },
