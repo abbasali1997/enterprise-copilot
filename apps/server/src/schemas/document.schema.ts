@@ -27,6 +27,6 @@ export const finalizeUploadInputSchema = createUploadInputSchema
   })
   .strict();
 
-export const viewUploadInputSchema = z.object({
+export const viewOrDeleteUploadInputSchema = z.object({
   attachmentId: z.string(),
 });

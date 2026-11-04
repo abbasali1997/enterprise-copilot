@@ -1,10 +1,11 @@
 import {
   createUploadInputSchema,
   finalizeUploadInputSchema,
-  viewUploadInputSchema,
+  viewOrDeleteUploadInputSchema,
 } from "../schemas/document.schema.js";
 import {
   createUpload,
+  deleteUpload,
   finalizeUpload,
   getDocuments,
   viewUpload,
@@ -29,8 +30,14 @@ export const documentRouter = router({
   ),
 
   viewDocument: tenantProcedure
-    .input(viewUploadInputSchema)
+    .input(viewOrDeleteUploadInputSchema)
     .query(({ input, ctx }) =>
       viewUpload(input.attachmentId, ctx.organizationId, ctx.role),
+    ),
+
+  deleteDocument: tenantProcedure
+    .input(viewOrDeleteUploadInputSchema)
+    .mutation(({ input, ctx }) =>
+      deleteUpload(input.attachmentId, ctx.organizationId, ctx.role),
     ),
 });

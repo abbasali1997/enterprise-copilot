@@ -27,6 +27,8 @@ import {
   updateManyDocuments,
 } from "../repositories/document.repository.js";
 
+import { deleteFromStorage } from "../storage/upload.service.js";
+
 const PRESIGNED_URL_EXPIRY_SECONDS = 5 * 60;
 
 export const createUpload = async (
@@ -265,3 +267,39 @@ export const getDocuments = (
 
   return getDocumentList(organizationId);
 };
+
+export const deleteUpload = async (
+  id: string,
+  organizationId: string,
+  role: OrganizationRole,
+) =>
+  logOperation(
+    "document.deleteUpload",
+    { attachmentId: id, organizationId },
+    async () => {
+      if (!can(role, PERMISSIONS.DOCUMENT_DELETE)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete documents",
+        });
+      }
+
+      const attachment = await getDocumentById(id);
+      if (!attachment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Uploaded document with id ${id} was not found`,
+        });
+      }
+
+      if (attachment.organizationId !== organizationId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Attachment does not belong to your organization",
+        });
+      }
+
+      await deleteFromStorage({ attachmentId: id });
+      return { success: true };
+    },
+  );

@@ -66,6 +66,13 @@ function WorkspacePage() {
     ...trpc.documents.getDocuments.queryOptions(),
     queryKey: documetsQueryKey,
     enabled: !!organizationId && canViewDocuments && activeTab === "documents",
+    refetchInterval: (query) =>
+      activeTab === "documents" &&
+      query.state.data?.some(
+        (document) => document.status === "UPLOADED" || document.status === "PROCESSING",
+      )
+        ? 3000
+        : false,
   });
 
   const signedInMember = membersQuery.data?.find(
@@ -194,7 +201,23 @@ function WorkspacePage() {
                   documentsQuery.isSuccess && (
                     <WorkspaceDocuments
                       documents={documentsQuery.data ?? []}
-                      onAddToDocumentList={() => {}}
+                      onAddToDocumentList={(document) => {
+                        queryClient.setQueryData(
+                          documetsQueryKey,
+                          (current: typeof documentsQuery.data) => [
+                            ...(current ?? []).filter((item) => item.id !== document.id),
+                            document,
+                          ],
+                        );
+                        void queryClient.invalidateQueries({ queryKey: documetsQueryKey });
+                      }}
+                      onDelete={(document) => {
+                        queryClient.setQueryData(
+                          documetsQueryKey,
+                          (current: typeof documentsQuery.data) =>
+                            current?.filter((item) => item.id !== document.id),
+                        );
+                      }}
                       organizationName={organization.name}
                     />
                   )}

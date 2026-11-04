@@ -20,6 +20,7 @@ export const getDocumentList = (
       type: true,
       fileSize: true,
       mimeType: true,
+      status: true,
     },
   });
 
