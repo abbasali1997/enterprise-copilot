@@ -21,8 +21,6 @@ export function clearAuthCookie(res: Response) {
 }
 
 export function readAuthCookie(req: Request): string | undefined {
-  console.log(req.headers);
-
   const cookie = req.headers.cookie
     ?.split(";")
     .map((part) => part.trim())

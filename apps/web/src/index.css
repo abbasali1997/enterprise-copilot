@@ -2,6 +2,10 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+body {
+    font-family: Calibri;
+}
+
 html[data-theme="dark"] #bg-area {
     position: relative;
     overflow: hidden;
