@@ -6,6 +6,47 @@ import remarkGfm from "remark-gfm";
 
 type Role = "USER" | "ASSISTANT" | "SYSTEM" | "TOOL";
 
+type CitationNode = {
+  type: string;
+  value?: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: CitationNode[];
+};
+
+// Style source references in rendered Markdown without changing code examples.
+function rehypeSourceCitations() {
+  return (tree: CitationNode) => {
+    function visit(node: CitationNode) {
+      if (!node.children || node.tagName === "code" || node.tagName === "pre") return;
+      node.children = node.children.flatMap((child): CitationNode[] => {
+        if (child.type !== "text" || !child.value) {
+          visit(child);
+          return [child];
+        }
+        const parts: CitationNode[] = [];
+        const pattern = /\[SOURCE_\d+(?:\s*:[^\]\n]*)?\]/g;
+        let offset = 0;
+        for (const match of child.value.matchAll(pattern)) {
+          const index = match.index!;
+          if (index > offset) parts.push({ type: "text", value: child.value.slice(offset, index) });
+          parts.push({
+            type: "element",
+            tagName: "small",
+            properties: { className: ["text-xs", "font-normal", "text-indigo-600", "dark:text-cyan-400"] },
+            children: [{ type: "text", value: match[0] }],
+          });
+          offset = index + match[0].length;
+        }
+        if (!parts.length) return [child];
+        if (offset < child.value.length) parts.push({ type: "text", value: child.value.slice(offset) });
+        return parts;
+      });
+    }
+    visit(tree);
+  };
+}
+
 const markdownComponents: Components = {
   h1: ({ children }) => (
     <h1 className="mt-5 mb-3 text-3xl font-bold">{children}</h1>
@@ -98,8 +139,8 @@ const markdownComponents: Components = {
 function MessageBubble(props: { role: Role; content: string }) {
   const isUser = props.role === "USER";
   const messageBgColor = isUser
-    ? "bg-indigo-500/85 text-slate-100 text-right dark:bg-cyan-600/85"
-    : "dark:bg-indigo-950 dark:text-slate-100 bg-slate-200/85 text-black text-left";
+    ? "bg-indigo-600 text-white text-right dark:bg-cyan-600/85"
+    : "dark:bg-gray-800 dark:text-slate-100 bg-slate-50 text-slate-900 text-left";
 
   return (
     <div
@@ -113,6 +154,7 @@ function MessageBubble(props: { role: Role; content: string }) {
         ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeSourceCitations]}
             components={markdownComponents}
           >
             {props.content}

@@ -60,6 +60,7 @@ export class GeminiProvider implements LLMProvider {
         model: input.model,
         contents: getConversationContents(input.messages),
         config: {
+          abortSignal: input.signal,
           systemInstruction: getSystemInstruction(input.messages),
           temperature: input.temperature,
           maxOutputTokens: input.maxOutputTokens,
@@ -85,12 +86,14 @@ export class GeminiProvider implements LLMProvider {
 
   async *stream(input: LLMProviderInput): AsyncGenerator<LLMStreamEvent> {
     const startedAt = performance.now();
+    let bufferedText = "";
 
     try {
       const stream = await this.client.models.generateContentStream({
         model: input.model,
         contents: getConversationContents(input.messages),
         config: {
+          abortSignal: input.signal,
           systemInstruction: getSystemInstruction(input.messages),
           temperature: input.temperature,
           maxOutputTokens: input.maxOutputTokens,
@@ -112,13 +115,16 @@ export class GeminiProvider implements LLMProvider {
 
         const delta = chunk.text;
 
-        if (delta) {
-          yield {
-            type: "text-delta",
-            generationId: input.generationId,
-            delta,
-          };
-        }
+        if (delta) bufferedText += delta;
+      }
+
+      // Publish text only after the SDK has validated the complete stream.
+      if (bufferedText) {
+        yield {
+          type: "text-delta",
+          generationId: input.generationId,
+          delta: bufferedText,
+        };
       }
 
       yield {
@@ -138,6 +144,32 @@ export class GeminiProvider implements LLMProvider {
         latencyMs: Math.round(performance.now() - startedAt),
       };
     } catch (error) {
+      if (
+        !input.signal?.aborted &&
+        error instanceof Error &&
+        error.message === "Incomplete JSON segment at the end"
+      ) {
+        // Discard the uncommitted stream and recover with one non-streaming request.
+        const result = await this.generate(input);
+        yield {
+          type: "text-delta",
+          generationId: input.generationId,
+          delta: result.text,
+        };
+        yield {
+          type: "usage",
+          generationId: input.generationId,
+          usage: result.usage,
+        };
+        yield {
+          type: "finish",
+          generationId: input.generationId,
+          model: result.model,
+          finishReason: result.finishReason,
+          latencyMs: Math.round(performance.now() - startedAt),
+        };
+        return;
+      }
       throw normalizeGeminiError(error);
     }
   }

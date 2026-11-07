@@ -16,8 +16,8 @@ import {
 import { TRPCError } from "@trpc/server";
 import { Prisma, prisma } from "@enterprise/db";
 import { randomUUID } from "node:crypto";
-
 import { logger } from "../utils/logger.js";
+import { buildRagMessages } from "./rag.service.js";
 import { llmInteractiveQueue } from "@enterprise/worker/queues";
 import {
   generationStreamKey,
@@ -107,6 +107,13 @@ export const sendMessage = async (
     }
   }
 
+  const messages = await buildRagMessages({
+    userId: signedInUserId,
+    organizationId,
+    role,
+    query: input.content,
+  });
+
   const message = await createMessage({
     conversationId: conversation.id,
     userId: signedInUserId,
@@ -133,6 +140,7 @@ export const sendMessage = async (
         provider: input.provider,
         model: input.model,
         content: input.content,
+        messages,
       },
       { jobId: generationId },
     );

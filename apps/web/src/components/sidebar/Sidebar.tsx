@@ -127,7 +127,7 @@ const AppSidebar = () => {
                   <li
                     key={conversation.id}
                     title={conversation.title}
-                    className="cursor-pointer truncate rounded-md px-2 py-2 hover:text-indigo-300"
+                    className="text-lg font-semibold cursor-pointer truncate rounded-md px-2 py-2 hover:text-indigo-300"
                   >
                     {conversation.title}
                   </li>

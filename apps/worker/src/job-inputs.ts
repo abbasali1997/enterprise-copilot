@@ -1,4 +1,4 @@
-import type { LLMProviderName } from "@enterprise/llm";
+import type { LLMMessage, LLMProviderName } from "@enterprise/llm";
 
 export type ChatGenerationJob = {
   generationId: string;
@@ -8,6 +8,7 @@ export type ChatGenerationJob = {
   provider: LLMProviderName;
   model: string;
   content: string;
+  messages?: LLMMessage[];
 };
 
 export type FinalizeDocumentJob = {

@@ -100,7 +100,7 @@ export const processLlmInteractiveJob = async (job: Job<ChatGenerationJob>) => {
       provider,
       model,
       signal: AbortSignal.timeout(10 * 60 * 1000),
-      messages: [
+      messages: job.data.messages ?? [
         { role: "system", content: "You are a helpful enterprise assistant." },
         { role: "user", content },
       ],
