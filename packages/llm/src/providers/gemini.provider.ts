@@ -86,7 +86,6 @@ export class GeminiProvider implements LLMProvider {
 
   async *stream(input: LLMProviderInput): AsyncGenerator<LLMStreamEvent> {
     const startedAt = performance.now();
-    let bufferedText = "";
 
     try {
       const stream = await this.client.models.generateContentStream({
@@ -115,16 +114,13 @@ export class GeminiProvider implements LLMProvider {
 
         const delta = chunk.text;
 
-        if (delta) bufferedText += delta;
-      }
-
-      // Publish text only after the SDK has validated the complete stream.
-      if (bufferedText) {
-        yield {
-          type: "text-delta",
-          generationId: input.generationId,
-          delta: bufferedText,
-        };
+        if (delta) {
+          yield {
+            type: "text-delta",
+            generationId: input.generationId,
+            delta,
+          };
+        }
       }
 
       yield {
