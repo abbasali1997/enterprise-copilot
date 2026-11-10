@@ -53,12 +53,16 @@ async function main() {
   await prisma.organization.createMany({
     data: [
       {
-        name: "ORG-I",
-        slug: slugify("ORG-I"),
+        name: "ACME Corporation",
+        slug: slugify("ACME Corporation"),
+        logoUrl:
+          "https://cdn.freebiesupply.com/logos/large/2x/acme-1-logo-png-transparent.png",
       },
       {
-        name: "ORG-II",
-        slug: slugify("ORG-II"),
+        name: "Fainin",
+        slug: slugify("Fainin"),
+        logoUrl:
+          "https://thegreendealshow.com/wp-content/uploads/2026/05/fainin_Logo_1000-scaled.png",
       },
     ],
   });
@@ -71,6 +75,25 @@ async function main() {
   }
 
   console.log("Organization created.");
+
+  console.log("Creating organization groups...");
+
+  const [hrGroup, engineeringGroup, financeGroup] = await Promise.all([
+    prisma.organizationGroup.create({
+      data: { name: "HR", organizationId: organizations[0].id },
+    }),
+    prisma.organizationGroup.create({
+      data: { name: "Engineering", organizationId: organizations[0].id },
+    }),
+    prisma.organizationGroup.create({
+      data: { name: "Finance", organizationId: organizations[1].id },
+    }),
+    prisma.organizationGroup.create({
+      data: { name: "Marketing", organizationId: organizations[1].id },
+    }),
+  ]);
+
+  console.log("Organization groups created.");
 
   console.log("Creating memberships");
 
@@ -95,6 +118,7 @@ async function main() {
     data.push({
       organizationId: organizations[0].id,
       userId: user.id,
+      groupId: user.name === "user-1" ? hrGroup.id : engineeringGroup.id,
     });
   }
 
@@ -104,11 +128,13 @@ async function main() {
       {
         organizationId: organizations[0].id,
         userId: adminUser.id,
-        role: "ADMIN",
+        groupId: hrGroup.id,
+        role: "OWNER",
       },
       {
         organizationId: organizations[1].id,
         userId: adminUser.id,
+        groupId: financeGroup.id,
         role: "ADMIN",
       },
     ],

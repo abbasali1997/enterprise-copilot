@@ -10,6 +10,7 @@ export const selectOrganizationSchema = z.object({
 });
 
 export const inviteMemberSchema = z.object({
+  groupId: z.string().trim().uuid(),
   email: z.string().trim().toLowerCase().email(),
   role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
 });

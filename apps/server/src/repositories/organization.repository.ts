@@ -35,6 +35,7 @@ export const createOrganizationInvitation = (
     email: string;
     organizationId: string;
     role: "MEMBER" | "ADMIN";
+    groupId: string;
     invitedByUserId: string;
     tokenHash: string;
     expiresAt: Date;
@@ -43,6 +44,13 @@ export const createOrganizationInvitation = (
 ) => {
   return db.organizationInvitation.create({
     data: input,
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 };
 

@@ -8,12 +8,7 @@ import {
 } from "../repositories/organization-membership.repository.js";
 import { prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
-import {
-  can,
-  generateJWT,
-  hashPassword,
-  PERMISSIONS,
-} from "@enterprise/auth";
+import { can, generateJWT, hashPassword, PERMISSIONS } from "@enterprise/auth";
 import { createHash, randomBytes } from "node:crypto";
 import type {
   AcceptInviteInput,
@@ -37,6 +32,7 @@ import {
 } from "../repositories/user.repository.js";
 import { logger } from "../utils/logger.js";
 import { errorDetails } from "../utils/log-operation.js";
+import { emailQueue } from "@enterprise/worker/queues";
 
 export const updateOrganizationMember = async (
   input: {
@@ -91,7 +87,8 @@ export const updateOrganizationMember = async (
 
   if (
     targetMember.userId === signedInUserId &&
-    (input.membershipStatus === "SUSPENDED" || input.membershipStatus === "REMOVED")
+    (input.membershipStatus === "SUSPENDED" ||
+      input.membershipStatus === "REMOVED")
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -127,18 +124,39 @@ export const updateOrganizationMember = async (
 export const inviteOrganizationMember = async (
   input: {
     email: string;
+    groupId: string;
     role: "MEMBER" | "ADMIN";
   },
   signedInUserId: string,
   activeOrganizationId: string,
   role: OrganizationRole,
 ) => {
+  const inviter = await findUserById(signedInUserId);
+
+  if (!inviter) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `User not found with id ${signedInUserId}`,
+    });
+  }
+
   const email = normalizeEmail(input.email);
 
   if (!can(role, PERMISSIONS.MEMBER_INVITE)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You do not have permission to invite members",
+    });
+  }
+
+  const group = await prisma.organizationGroup.findFirst({
+    where: { id: input.groupId, organizationId: activeOrganizationId },
+  });
+
+  if (!group) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Group not found in this workspace",
     });
   }
 
@@ -178,14 +196,35 @@ export const inviteOrganizationMember = async (
 
   const { token, tokenHash } = generateInvitationToken();
 
+  const invitationUrl = new URL(`/invitation/${token}`, process.env.WEB_ORIGIN)
+    .href;
+
   const invitation = await createOrganizationInvitation({
     email,
     organizationId: activeOrganizationId,
     role: input.role,
+    groupId: input.groupId,
     invitedByUserId: signedInUserId,
     tokenHash,
     expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
   });
+
+  try {
+    await emailQueue.add("organization-invitation", {
+      invitationId: invitation.id,
+      invitationUrl,
+    }, { jobId: invitation.id });
+  } catch (error) {
+    await prisma.organizationInvitation.updateMany({
+      where: { id: invitation.id, status: "PENDING" },
+      data: { status: "REVOKED" },
+    });
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Could not queue the invitation email. Please try again.",
+      cause: error,
+    });
+  }
 
   logger.success(
     `Invitation ${invitation.id} created for workspace ${activeOrganizationId} by user ${signedInUserId} with role ${input.role}`,
@@ -227,6 +266,22 @@ export const acceptOrganizationInvite = async (
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Organization is not active",
+        });
+      }
+
+      const group = invitation.groupId
+        ? await tx.organizationGroup.findFirst({
+            where: {
+              id: invitation.groupId,
+              organizationId: invitation.organizationId,
+            },
+          })
+        : null;
+      if (!group) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "The invitation group is unavailable. Ask for a new invitation.",
         });
       }
 
@@ -332,6 +387,7 @@ export const acceptOrganizationInvite = async (
             organizationId: invitation.organizationId,
             userId: user.id,
             role: invitation.role,
+            groupId: group.id,
           },
           tx,
         );
@@ -453,17 +509,28 @@ const validateInvitation = (
 
   if (invitation.expiresAt <= now) {
     // Mark invitation as expired
-    logger.info(JSON.stringify({ invitationId: invitation.id }), "Expired invitation encountered");
-    void markInvitationExpired(invitation.id).then((res) => {
-      if (res.count !== 1) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Could not update invitation to Expired",
-        });
-      }
-    }).catch((error: unknown) => {
-      logger.error(JSON.stringify({ invitationId: invitation.id, ...errorDetails(error) }), "Failed to mark invitation expired");
-    });
+    logger.info(
+      JSON.stringify({ invitationId: invitation.id }),
+      "Expired invitation encountered",
+    );
+    void markInvitationExpired(invitation.id)
+      .then((res) => {
+        if (res.count !== 1) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Could not update invitation to Expired",
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        logger.error(
+          JSON.stringify({
+            invitationId: invitation.id,
+            ...errorDetails(error),
+          }),
+          "Failed to mark invitation expired",
+        );
+      });
 
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -491,7 +558,6 @@ const generateInvitationToken = () => {
   };
 };
 
-
 export const getOrganizationMembers = async (
   organizationId: string,
   role: OrganizationRole,
@@ -507,5 +573,23 @@ export const getOrganizationMembers = async (
     where: { organizationId },
     include: { user: { select: { name: true, email: true } } },
     orderBy: [{ role: "asc" }, { joinedAt: "asc" }, { id: "asc" }],
+  });
+};
+
+export const getOrganizationGroups = async (
+  organizationId: string,
+  role: OrganizationRole,
+) => {
+  if (!can(role, PERMISSIONS.GROUP_VIEW)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to view workspace groups",
+    });
+  }
+
+  return prisma.organizationGroup.findMany({
+    where: { organizationId },
+    select: { id: true, name: true },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
   });
 };

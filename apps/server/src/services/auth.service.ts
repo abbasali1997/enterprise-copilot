@@ -155,9 +155,13 @@ export const registerUser = async (input: RegisterInput) => {
     const res = await prisma.$transaction(async (tx) => {
       const newUser = await createUser({ name, email, passwordHash }, tx);
       const newOrganization = await createOrganization(organizationName, tx);
+      const defaultGroup = await tx.organizationGroup.create({
+        data: { name: newOrganization.id + " General", organizationId: newOrganization.id },
+      });
       const newMember = await createOrganizationMember(
         {
           role: "OWNER",
+          groupId: defaultGroup.id,
           userId: newUser.id,
           organizationId: newOrganization.id,
         },

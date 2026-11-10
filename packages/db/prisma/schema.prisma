@@ -124,24 +124,40 @@ model Organization {
   conversations           Conversation[]
   organizationInvitations OrganizationInvitation[]
   attachments             Attachment[]
+  groups                  OrganizationGroup[]
 }
 
 model OrganizationMember {
   id             String           @id @default(uuid())
   organizationId String
   userId         String
+  groupId        String
   role           OrganizationRole @default(MEMBER)
   status         MembershipStatus @default(ACTIVE)
   joinedAt       DateTime         @default(now())
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group        OrganizationGroup? @relation(fields: [groupId], references: [id])
 
   @@unique([organizationId, userId])
   @@index([organizationId])
   @@index([userId])
+}
+
+model OrganizationGroup {
+  id             String               @id @default(uuid())
+  name           String               @unique
+  organizationId String
+  members        OrganizationMember[]
+  documents      Attachment[]
+  invitations    OrganizationInvitation[]
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 model OrganizationInvitation {
@@ -151,6 +167,8 @@ model OrganizationInvitation {
   role             OrganizationRole             @default(MEMBER)
   invitedByUserId  String
   acceptedByUserId String?
+  groupId          String?
+  group            OrganizationGroup?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
   tokenHash        String                       @unique
   status           OrganizationInvitationStatus @default(PENDING)
   expiresAt        DateTime                     @default(dbgenerated("(now() + interval '48 hours')"))
@@ -246,8 +264,10 @@ model Attachment {
   fileSize       Int
   source         String
 
-  organization Organization    @relation(references: [id], fields: [organizationId], onDelete: Cascade)
-  chunks       DocumentChunk[]
+  organization        Organization       @relation(references: [id], fields: [organizationId], onDelete: Cascade)
+  chunks              DocumentChunk[]
+  organizationGroup   OrganizationGroup? @relation(fields: [organizationGroupId], references: [id])
+  organizationGroupId String?
 }
 
 model DocumentChunk {

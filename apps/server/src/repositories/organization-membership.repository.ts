@@ -16,6 +16,7 @@ export const createOrganizationMember = (
   input: {
     organizationId: string;
     userId: string;
+    groupId: string;
     role: "OWNER" | "ADMIN" | "MEMBER";
   },
   db: DbClient = prisma,
