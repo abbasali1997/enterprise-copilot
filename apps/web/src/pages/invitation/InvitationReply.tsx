@@ -94,7 +94,7 @@ function InvitationReply() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   disabled={respondToInvite.isPending}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 text-black"
                 />
               </div>
               <div>
@@ -116,7 +116,7 @@ function InvitationReply() {
                   onChange={(event) => setPassword(event.target.value)}
                   disabled={respondToInvite.isPending}
                   aria-describedby="invitation-password-help"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 text-black"
                 />
                 <p
                   id="invitation-password-help"

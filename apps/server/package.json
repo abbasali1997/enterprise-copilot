@@ -13,12 +13,12 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@enterprise/storage": "workspace:*",
     "@aws-sdk/client-s3": "^3.1143.0",
     "@aws-sdk/s3-request-presigner": "^3.1143.0",
     "@enterprise/auth": "workspace:*",
     "@enterprise/db": "workspace:*",
     "@enterprise/llm": "workspace:*",
+    "@enterprise/storage": "workspace:*",
     "@enterprise/worker": "workspace:*",
     "@trpc/server": "^11.19.0",
     "aws-sdk": "^2.1693.0",

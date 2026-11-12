@@ -196,8 +196,9 @@ export const inviteOrganizationMember = async (
 
   const { token, tokenHash } = generateInvitationToken();
 
-  const invitationUrl = new URL(`/invitation/${token}`, process.env.WEB_ORIGIN)
-    .href;
+  const invitationUrl = `http://localhost:5173/invitation/${token}`;
+
+  console.log("url: ", invitationUrl);
 
   const invitation = await createOrganizationInvitation({
     email,
@@ -210,10 +211,14 @@ export const inviteOrganizationMember = async (
   });
 
   try {
-    await emailQueue.add("organization-invitation", {
-      invitationId: invitation.id,
-      invitationUrl,
-    }, { jobId: invitation.id });
+    await emailQueue.add(
+      "organization-invitation",
+      {
+        invitationId: invitation.id,
+        invitationUrl,
+      },
+      { jobId: invitation.id },
+    );
   } catch (error) {
     await prisma.organizationInvitation.updateMany({
       where: { id: invitation.id, status: "PENDING" },

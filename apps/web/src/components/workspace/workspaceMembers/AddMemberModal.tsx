@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc.ts";
 
 type AddMemberModalProps = {
@@ -13,10 +13,14 @@ function AddMemberModal({ organizationName, onClose }: AddMemberModalProps) {
   const titleId = useId();
   const emailId = useId();
   const roleId = useId();
+  const groupInputId = useId();
+  const [groupId, setGroupId] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
 
   const trpc = useTRPC();
+  const groups = useQuery(trpc.organization.getGroups.queryOptions());
+  const selectedGroupId = groups.data?.some((group) => group.id === groupId) ? groupId : "";
   const invitation = useMutation(
     trpc.organization.inviteMember.mutationOptions(),
   );
@@ -29,8 +33,8 @@ function AddMemberModal({ organizationName, onClose }: AddMemberModalProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (invitation.isPending || invitation.isSuccess) return;
-    invitation.mutate({ email: email.trim().toLowerCase(), role });
+    if (invitation.isPending || invitation.isSuccess || !selectedGroupId || !groups.isSuccess) return;
+    invitation.mutate({ email: email.trim().toLowerCase(), role, groupId: selectedGroupId });
   }
 
   return createPortal(
@@ -93,6 +97,40 @@ function AddMemberModal({ organizationName, onClose }: AddMemberModalProps) {
             />
           </div>
           <div>
+            <label htmlFor={groupInputId} className="mb-2 block text-sm font-medium">
+              Group
+            </label>
+            <select
+              id={groupInputId}
+              name="groupId"
+              required
+              value={selectedGroupId}
+              onChange={(event) => setGroupId(event.target.value)}
+              disabled={invitation.isPending || !groups.isSuccess || !groups.data.length}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+            >
+              <option value="" disabled>
+                {groups.isPending ? "Loading groups..." : groups.isError ? "Unable to load groups" : !groups.data.length ? "No groups available" : "Select a group"}
+              </option>
+              {groups.data?.map((group) => (
+                <option key={group.id} value={group.id}>{group.name}</option>
+              ))}
+            </select>
+            {groups.isSuccess && groups.data.length === 0 && (
+              <p role="status" className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                Create a group in this workspace before inviting a member.
+              </p>
+            )}
+            {groups.isError && (
+              <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-300">
+                {groups.error.message}{" "}
+                <button type="button" onClick={() => void groups.refetch()} disabled={groups.isFetching} className="underline">
+                  {groups.isFetching ? "Retrying..." : "Retry"}
+                </button>
+              </p>
+            )}
+          </div>
+          <div>
             <label htmlFor={roleId} className="mb-2 block text-sm font-medium">
               Role
             </label>
@@ -129,7 +167,7 @@ function AddMemberModal({ organizationName, onClose }: AddMemberModalProps) {
             </button>
             <button
               type="submit"
-              disabled={invitation.isPending}
+              disabled={invitation.isPending || !groups.isSuccess || !selectedGroupId}
               className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:focus-visible:outline-indigo-400"
             >
               {invitation.isPending ? "Inviting…" : "Send Invite"}

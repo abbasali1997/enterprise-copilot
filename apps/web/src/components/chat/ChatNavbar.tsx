@@ -64,13 +64,13 @@ function ChatNavbar({ onSearch, onChangeWorkspace }: ChatNavbarProps) {
         />
       </form>
 
-      <div className="flex min-w-0 max-w-[45%] shrink-0 items-center gap-5 border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/80 px-10 py-1 rounded-4xl shadow-lg">
+      <div className="flex min-w-0 max-w-[45%] shrink-0 items-center gap-5 border border-gray-200 dark:border-white/10 bg-transparent px-10 py-1 rounded-4xl shadow-lg">
         {logoUrl && logoUrl !== failedLogo ? (
           <img
             src={logoUrl}
             alt={`${workspace.name} logo`}
             onError={() => setFailedLogo(logoUrl)}
-            className="h-10 w-10 shrink-0 rounded-xl object-contain p-1"
+            className="h-10 w-10 shrink-0 rounded-4xl object-contain p-1"
           />
         ) : (
           <span

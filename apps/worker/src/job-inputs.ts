@@ -16,3 +16,8 @@ export type FinalizeDocumentJob = {
   userId: string;
   organizationId: string;
 };
+
+export type OrganizationInvitationEmailJob = {
+  invitationId: string;
+  invitationUrl: string;
+};
