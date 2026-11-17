@@ -38,7 +38,6 @@ export const updateOrganizationMember = async (
   input: {
     memberId: string;
     role?: "MEMBER" | "ADMIN";
-    email?: string;
     groupId?: string;
     membershipStatus?: "ACTIVE" | "SUSPENDED" | "REMOVED";
   },
@@ -46,7 +45,11 @@ export const updateOrganizationMember = async (
   activeOrganizationId: string,
   role: OrganizationRole,
 ) => {
-  if (input.role === undefined && input.membershipStatus === undefined && input.email === undefined && input.groupId === undefined) {
+  if (
+    input.role === undefined &&
+    input.membershipStatus === undefined &&
+    input.groupId === undefined
+  ) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Provide member details to update",
@@ -60,12 +63,21 @@ export const updateOrganizationMember = async (
     });
   }
 
-  if ((input.email !== undefined || input.groupId !== undefined) && !can(role, PERMISSIONS.MEMBER_UPDATE)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to update members" });
+  if (input.groupId !== undefined && !can(role, PERMISSIONS.MEMBER_UPDATE)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to update members",
+    });
   }
   if (input.groupId !== undefined) {
-    const group = await prisma.organizationGroup.findFirst({ where: { id: input.groupId, organizationId: activeOrganizationId } });
-    if (!group) throw new TRPCError({ code: "BAD_REQUEST", message: "Group not found in this workspace" });
+    const group = await prisma.organizationGroup.findFirst({
+      where: { id: input.groupId, organizationId: activeOrganizationId },
+    });
+    if (!group)
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Group not found in this workspace",
+      });
   }
 
   const statusPermissions = {
@@ -122,12 +134,27 @@ export const updateOrganizationMember = async (
     data: {
       role: input.role,
       status: input.membershipStatus,
-      group: input.groupId === undefined ? undefined : { connect: { id: input.groupId, organizationId: activeOrganizationId } },
-      user: input.email === undefined ? undefined : { update: { email: normalizeEmail(input.email) } },
+      group:
+        input.groupId === undefined
+          ? undefined
+          : {
+              connect: {
+                id: input.groupId,
+                organizationId: activeOrganizationId,
+              },
+            },
     },
   }).catch((error: unknown) => {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
-      throw new TRPCError({ code: "CONFLICT", message: "This email is already used by another account" });
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "This email is already used by another account",
+      });
     }
     throw error;
   });
@@ -618,7 +645,9 @@ export const getOrganizationGroups = async (
       id: true,
       name: true,
       _count: {
-        select: { members: { where: { organizationId, status: { not: "REMOVED" } } } },
+        select: {
+          members: { where: { organizationId, status: { not: "REMOVED" } } },
+        },
       },
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],

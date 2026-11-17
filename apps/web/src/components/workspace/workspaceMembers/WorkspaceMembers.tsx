@@ -10,28 +10,30 @@ import {
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import AddMemberModal from "@/components/workspace/workspaceMembers/AddMemberModal.tsx";
+import EditMemberModal from "@/components/workspace/workspaceMembers/EditMemberModal.tsx";
+
+type Member = {
+  organizationId: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
+  userId: string;
+  groupId: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  group: {
+    name: string;
+  } | null;
+  status: "INVITED" | "ACTIVE" | "SUSPENDED" | "REMOVED";
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  joinedAt: string;
+};
 
 export type WorkspaceMembersPropType = {
   organizationName: string;
-  members: {
-    organizationId: string;
-    role: "OWNER" | "ADMIN" | "MEMBER";
-    userId: string;
-    groupId: string;
-    user: {
-      name: string;
-      email: string;
-    };
-    group: {
-      name: string;
-    } | null;
-    status: "INVITED" | "ACTIVE" | "SUSPENDED" | "REMOVED";
-    id: string;
-    createdAt: string;
-    updatedAt: string;
-    joinedAt: string;
-  }[];
-  onEdit?: (member: WorkspaceMembersPropType["members"][number]) => void;
+  members: Member[];
   onActivate?: (member: WorkspaceMembersPropType["members"][number]) => void;
   onManageAccess?: (
     member: WorkspaceMembersPropType["members"][number],
@@ -54,7 +56,6 @@ const statusStyles = {
 function WorkspaceMembers({
   organizationName,
   members,
-  onEdit,
   onActivate,
   onManageAccess,
 }: WorkspaceMembersPropType) {
@@ -75,6 +76,7 @@ function WorkspaceMembers({
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_REACTIVATE);
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [editMember, setEditMember] = useState<Member | null>(null);
 
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -91,6 +93,13 @@ function WorkspaceMembers({
         <AddMemberModal
           organizationName={organizationName}
           onClose={() => setIsAddMemberOpen(false)}
+        />
+      ) : null}
+
+      {editMember ? (
+        <EditMemberModal
+          member={editMember}
+          onClose={() => setEditMember(null)}
         />
       ) : null}
 
@@ -120,17 +129,23 @@ function WorkspaceMembers({
           </caption>
           <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-slate-900 dark:text-slate-100">
             <tr>
-              {["Name", "Email", "Group", "Role", "Status", "Joined At", "Actions"].map(
-                (column) => (
-                  <th
-                    key={column}
-                    scope="col"
-                    className="whitespace-nowrap border-b border-gray-200 px-5 py-4 font-semibold"
-                  >
-                    {column}
-                  </th>
-                ),
-              )}
+              {[
+                "Name",
+                "Email",
+                "Group",
+                "Role",
+                "Status",
+                "Joined At",
+                "Actions",
+              ].map((column) => (
+                <th
+                  key={column}
+                  scope="col"
+                  className="whitespace-nowrap border-b border-gray-200 px-5 py-4 font-semibold"
+                >
+                  {column}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:bg-slate-900 dark:divide-slate-700">
@@ -186,8 +201,12 @@ function WorkspaceMembers({
                     <div className="flex min-w-[240px] flex-nowrap gap-2 [&>button]:shrink-0 [&>button]:whitespace-nowrap">
                       <button
                         type="button"
-                        onClick={() => onEdit?.(member)}
-                        disabled={!canUpdate || member.status === "REMOVED" || member.role === "OWNER"}
+                        onClick={() => setEditMember(member)}
+                        disabled={
+                          !canUpdate ||
+                          member.status === "REMOVED" ||
+                          member.role === "OWNER"
+                        }
                         aria-label={`Edit ${member.user.name}`}
                         className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-indigo-200"
                       >
