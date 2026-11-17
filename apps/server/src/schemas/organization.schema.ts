@@ -32,9 +32,15 @@ export const updateOrganizationMemberSchema = z
   .object({
     memberId: z.string().trim().uuid(),
     role: z.enum(["ADMIN", "MEMBER"]).optional(),
+    email: z.string().trim().toLowerCase().email().optional(),
+    groupId: z.string().trim().uuid().optional(),
     membershipStatus: z.enum(["ACTIVE", "SUSPENDED", "REMOVED"]).optional(),
   })
   .refine(
-    (input) => input.role !== undefined || input.membershipStatus !== undefined,
-    { message: "Provide a role or membership status to update" },
+    (input) => input.role !== undefined || input.membershipStatus !== undefined || input.email !== undefined || input.groupId !== undefined,
+    { message: "Provide member details to update" },
   );
+
+export const createOrganizationGroupSchema = z.object({
+  name: z.string().trim().min(1, "Enter a group name").max(100),
+});

@@ -38,16 +38,18 @@ export const updateOrganizationMember = async (
   input: {
     memberId: string;
     role?: "MEMBER" | "ADMIN";
+    email?: string;
+    groupId?: string;
     membershipStatus?: "ACTIVE" | "SUSPENDED" | "REMOVED";
   },
   signedInUserId: string,
   activeOrganizationId: string,
   role: OrganizationRole,
 ) => {
-  if (input.role === undefined && input.membershipStatus === undefined) {
+  if (input.role === undefined && input.membershipStatus === undefined && input.email === undefined && input.groupId === undefined) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Provide a role or membership status to update",
+      message: "Provide member details to update",
     });
   }
 
@@ -56,6 +58,14 @@ export const updateOrganizationMember = async (
       code: "FORBIDDEN",
       message: "You do not have permission to change member roles",
     });
+  }
+
+  if ((input.email !== undefined || input.groupId !== undefined) && !can(role, PERMISSIONS.MEMBER_UPDATE)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to update members" });
+  }
+  if (input.groupId !== undefined) {
+    const group = await prisma.organizationGroup.findFirst({ where: { id: input.groupId, organizationId: activeOrganizationId } });
+    if (!group) throw new TRPCError({ code: "BAD_REQUEST", message: "Group not found in this workspace" });
   }
 
   const statusPermissions = {
@@ -112,7 +122,14 @@ export const updateOrganizationMember = async (
     data: {
       role: input.role,
       status: input.membershipStatus,
+      group: input.groupId === undefined ? undefined : { connect: { id: input.groupId, organizationId: activeOrganizationId } },
+      user: input.email === undefined ? undefined : { update: { email: normalizeEmail(input.email) } },
     },
+  }).catch((error: unknown) => {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      throw new TRPCError({ code: "CONFLICT", message: "This email is already used by another account" });
+    }
+    throw error;
   });
 
   logger.success(
@@ -576,7 +593,10 @@ export const getOrganizationMembers = async (
 
   return findOrganizationMembers({
     where: { organizationId },
-    include: { user: { select: { name: true, email: true } } },
+    include: {
+      user: { select: { name: true, email: true } },
+      group: { select: { name: true } },
+    },
     orderBy: [{ role: "asc" }, { joinedAt: "asc" }, { id: "asc" }],
   });
 };
@@ -594,7 +614,13 @@ export const getOrganizationGroups = async (
 
   return prisma.organizationGroup.findMany({
     where: { organizationId },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      _count: {
+        select: { members: { where: { organizationId, status: { not: "REMOVED" } } } },
+      },
+    },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
 };

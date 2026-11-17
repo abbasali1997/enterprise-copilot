@@ -6,6 +6,7 @@ import {
 } from "../trpc.js";
 import {
   changeOrganizationSchema,
+  createOrganizationGroupSchema,
   inviteMemberSchema,
   respondToInviteSchema,
   selectOrganizationSchema,
@@ -24,6 +25,8 @@ import {
   updateOrganizationMember,
 } from "../services/organization-membership.service.js";
 
+import { createOrganizationGroup } from "../services/organization-group.service.js";
+
 import { authenticateResponse, setAuthCookie } from "../utils/auth-cookie.js";
 
 export const organizationRouter = router({
@@ -38,6 +41,12 @@ export const organizationRouter = router({
   getGroups: tenantProcedure.query(({ ctx }) =>
     getOrganizationGroups(ctx.organizationId, ctx.role),
   ),
+
+  createGroup: tenantProcedure
+    .input(createOrganizationGroupSchema)
+    .mutation(({ ctx, input }) =>
+      createOrganizationGroup(input, ctx.organizationId, ctx.role),
+    ),
 
   getMembers: tenantProcedure.query(({ ctx }) =>
     getOrganizationMembers(ctx.organizationId, ctx.role),

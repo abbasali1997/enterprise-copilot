@@ -4,12 +4,14 @@ import {
   faEye,
   faFileLines,
   faGears,
+  faPeopleGroup,
   faSection,
-  faUsers,
+  faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 
-export type WorkspaceTab = "overview" | "members" | "settings" | "documents";
+export type WorkspaceTab =
+  "overview" | "members" | "groups" | "settings" | "documents";
 
 type WorkspaceHeaderProps = {
   name: string;
@@ -42,7 +44,9 @@ function WorkspaceHeader({
       case "settings":
         return faGears;
       case "members":
-        return faUsers;
+        return faUserGroup;
+      case "groups":
+        return faPeopleGroup;
       case "documents":
         return faFileLines;
       default:
@@ -66,7 +70,7 @@ function WorkspaceHeader({
           <div>
             <p className="font-bold text-3xl">{name}</p>
             <p className="text-gray-600 text-md mt-2 dark:text-gray-300">
-              Manage your workspace members and settings
+              Manage your workspace members, groups, and settings
             </p>
           </div>
         </div>
@@ -82,24 +86,24 @@ function WorkspaceHeader({
       </div>
 
       <div className="flex gap-15 p-5 pb-0" aria-label="Workspace sections">
-        {(["overview", "members", "documents", "settings"] as const).map(
-          (tab) => (
-            <button
-              key={tab}
-              type="button"
-              aria-pressed={activeTab === tab}
-              onClick={() => onTabChange(tab)}
-              className={`cursor-pointer text-md border-b-4 pb-2 font-bold capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
-                activeTab === tab
-                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                  : "border-transparent text-gray-600"
-              }`}
-            >
-              <FontAwesomeIcon icon={getSectionIcon(tab)} className="mr-2" />
-              {tab}
-            </button>
-          ),
-        )}
+        {(
+          ["overview", "members", "groups", "documents", "settings"] as const
+        ).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            aria-pressed={activeTab === tab}
+            onClick={() => onTabChange(tab)}
+            className={`cursor-pointer text-md border-b-4 pb-2 font-bold capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+              activeTab === tab
+                ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                : "border-transparent text-gray-600"
+            }`}
+          >
+            <FontAwesomeIcon icon={getSectionIcon(tab)} className="mr-2" />
+            {tab}
+          </button>
+        ))}
       </div>
     </div>
   );

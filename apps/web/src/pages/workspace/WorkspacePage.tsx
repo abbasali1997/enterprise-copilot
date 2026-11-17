@@ -11,6 +11,7 @@ import WorkspaceMembers from "@/components/workspace/workspaceMembers/WorkspaceM
 import MemberAccessModal from "@/components/workspace/workspaceMembers/MemberAccessModal.tsx";
 import WorkspaceSettings from "@/components/workspace/workspaceSettings/WorkspaceSettings.tsx";
 import WorkspaceDocuments from "@/components/workspace/workspaceDocuments/WorkspaceDocuments.tsx";
+import WorkspaceGroups from "@/components/workspace/workspaceGroups/WorkspaceGroups.tsx";
 
 function WorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("members");
@@ -69,7 +70,8 @@ function WorkspacePage() {
     refetchInterval: (query) =>
       activeTab === "documents" &&
       query.state.data?.some(
-        (document) => document.status === "UPLOADED" || document.status === "PROCESSING",
+        (document) =>
+          document.status === "UPLOADED" || document.status === "PROCESSING",
       )
         ? 3000
         : false,
@@ -205,11 +207,15 @@ function WorkspacePage() {
                         queryClient.setQueryData(
                           documetsQueryKey,
                           (current: typeof documentsQuery.data) => [
-                            ...(current ?? []).filter((item) => item.id !== document.id),
+                            ...(current ?? []).filter(
+                              (item) => item.id !== document.id,
+                            ),
                             document,
                           ],
                         );
-                        void queryClient.invalidateQueries({ queryKey: documetsQueryKey });
+                        void queryClient.invalidateQueries({
+                          queryKey: documetsQueryKey,
+                        });
                       }}
                       onDelete={(document) => {
                         queryClient.setQueryData(
@@ -221,6 +227,9 @@ function WorkspacePage() {
                       organizationName={organization.name}
                     />
                   )}
+                {activeTab === "groups" && (
+                  <WorkspaceGroups key={organization.id} />
+                )}
                 {activeTab === "settings" && (
                   <WorkspaceSettings
                     key={organization.id}

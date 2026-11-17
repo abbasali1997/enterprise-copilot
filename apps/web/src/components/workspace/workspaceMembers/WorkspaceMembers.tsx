@@ -11,16 +11,20 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import AddMemberModal from "@/components/workspace/workspaceMembers/AddMemberModal.tsx";
 
-type WorkspaceMembersPropType = {
+export type WorkspaceMembersPropType = {
   organizationName: string;
   members: {
     organizationId: string;
     role: "OWNER" | "ADMIN" | "MEMBER";
     userId: string;
+    groupId: string;
     user: {
       name: string;
       email: string;
     };
+    group: {
+      name: string;
+    } | null;
     status: "INVITED" | "ACTIVE" | "SUSPENDED" | "REMOVED";
     id: string;
     createdAt: string;
@@ -112,11 +116,11 @@ function WorkspaceMembers({
       <div className="min-h-0 min-w-0 flex-1 overflow-auto">
         <table className="w-full min-w-[1100px] table-auto text-left text-sm shadow-lg rounded-lg">
           <caption className="sr-only">
-            Workspace members and their roles, status, and join dates
+            Workspace members and their groups, roles, status, and join dates
           </caption>
           <thead className="sticky top-0 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-slate-900 dark:text-slate-100">
             <tr>
-              {["Name", "Email", "Role", "Status", "Joined At", "Actions"].map(
+              {["Name", "Email", "Group", "Role", "Status", "Joined At", "Actions"].map(
                 (column) => (
                   <th
                     key={column}
@@ -152,6 +156,9 @@ function WorkspaceMembers({
                   <td className="min-w-[260px] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
                     {member.user.email}
                   </td>
+                  <td className="min-w-[160px] px-5 py-4 text-gray-600 dark:text-slate-100">
+                    {member.group?.name ?? "No group"}
+                  </td>
                   <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
                     <span
                       className={`rounded-4xl px-2.5 py-1 text-xs font-medium capitalize ${rolesStyles[member.role]}`}
@@ -180,7 +187,7 @@ function WorkspaceMembers({
                       <button
                         type="button"
                         onClick={() => onEdit?.(member)}
-                        disabled={!canUpdate || member.status === "REMOVED"}
+                        disabled={!canUpdate || member.status === "REMOVED" || member.role === "OWNER"}
                         aria-label={`Edit ${member.user.name}`}
                         className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-indigo-200"
                       >
@@ -225,7 +232,7 @@ function WorkspaceMembers({
             {!members.length && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-5 py-12 text-center text-gray-500"
                 >
                   No members found.
