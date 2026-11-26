@@ -3,8 +3,6 @@ import {
   createOrganizationMember,
   findOrganizationMember,
   findOrganizationMembers,
-  findOne as findOrganizationMemberRecord,
-  updateOrganizationMemberRecord,
 } from "../repositories/organization-membership.repository.js";
 import { prisma } from "@enterprise/db";
 import { TRPCError } from "@trpc/server";
@@ -33,137 +31,6 @@ import {
 import { logger } from "../utils/logger.js";
 import { errorDetails } from "../utils/log-operation.js";
 import { emailQueue } from "@enterprise/worker/queues";
-
-export const updateOrganizationMember = async (
-  input: {
-    memberId: string;
-    role?: "MEMBER" | "ADMIN";
-    groupId?: string;
-    membershipStatus?: "ACTIVE" | "SUSPENDED" | "REMOVED";
-  },
-  signedInUserId: string,
-  activeOrganizationId: string,
-  role: OrganizationRole,
-) => {
-  if (
-    input.role === undefined &&
-    input.membershipStatus === undefined &&
-    input.groupId === undefined
-  ) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "Provide member details to update",
-    });
-  }
-
-  if (input.role !== undefined && !can(role, PERMISSIONS.MEMBER_ROLE_UPDATE)) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You do not have permission to change member roles",
-    });
-  }
-
-  if (input.groupId !== undefined && !can(role, PERMISSIONS.MEMBER_UPDATE)) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You do not have permission to update members",
-    });
-  }
-  if (input.groupId !== undefined) {
-    const group = await prisma.organizationGroup.findFirst({
-      where: { id: input.groupId, organizationId: activeOrganizationId },
-    });
-    if (!group)
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Group not found in this workspace",
-      });
-  }
-
-  const statusPermissions = {
-    ACTIVE: PERMISSIONS.MEMBER_REACTIVATE,
-    SUSPENDED: PERMISSIONS.MEMBER_SUSPEND,
-    REMOVED: PERMISSIONS.MEMBER_REMOVE,
-  } as const;
-
-  if (
-    input.membershipStatus !== undefined &&
-    !can(role, statusPermissions[input.membershipStatus])
-  ) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: `You do not have permission to ${input.membershipStatus === "ACTIVE" ? "reactivate" : input.membershipStatus === "SUSPENDED" ? "suspend" : "remove"} members`,
-    });
-  }
-
-  const targetMember = await findOrganizationMemberRecord({
-    where: { id: input.memberId, organizationId: activeOrganizationId },
-  });
-
-  if (!targetMember) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Member not found in this workspace",
-    });
-  }
-
-  if (
-    targetMember.userId === signedInUserId &&
-    (input.membershipStatus === "SUSPENDED" ||
-      input.membershipStatus === "REMOVED")
-  ) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You cannot suspend or remove your own membership",
-    });
-  }
-
-  if (targetMember.role === "OWNER") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Owner memberships cannot be changed through this action",
-    });
-  }
-
-  const updatedMember = await updateOrganizationMemberRecord({
-    where: {
-      id: input.memberId,
-      organizationId: activeOrganizationId,
-      role: { not: "OWNER" },
-    },
-    data: {
-      role: input.role,
-      status: input.membershipStatus,
-      group:
-        input.groupId === undefined
-          ? undefined
-          : {
-              connect: {
-                id: input.groupId,
-                organizationId: activeOrganizationId,
-              },
-            },
-    },
-  }).catch((error: unknown) => {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "P2002"
-    ) {
-      throw new TRPCError({
-        code: "CONFLICT",
-        message: "This email is already used by another account",
-      });
-    }
-    throw error;
-  });
-
-  logger.success(
-    `Membership ${updatedMember.id} in workspace ${updatedMember.organizationId} updated by user ${signedInUserId}: role ${targetMember.role} -> ${updatedMember.role}, status ${targetMember.status} -> ${updatedMember.status}`,
-  );
-  return updatedMember;
-};
 
 export const inviteOrganizationMember = async (
   input: {
@@ -240,9 +107,7 @@ export const inviteOrganizationMember = async (
 
   const { token, tokenHash } = generateInvitationToken();
 
-  const invitationUrl = `http://localhost:5173/invitation/${token}`;
-
-  console.log("url: ", invitationUrl);
+  const invitationUrl = getInvitationUrl(token);
 
   const invitation = await createOrganizationInvitation({
     email,
@@ -389,6 +254,7 @@ export const acceptOrganizationInvite = async (
       const claimed = await claimOrganizationInvitation(
         {
           id: invitation.id,
+          tokenHash: invitation.tokenHash,
           status: "ACCEPTED",
           respondedAt,
         },
@@ -500,6 +366,7 @@ export const rejectOrganizationInvite = async (input: RejectInviteInput) => {
       const claimed = await claimOrganizationInvitation(
         {
           id: invitation.id,
+          tokenHash: invitation.tokenHash,
           status: "REJECTED",
           respondedAt,
         },
@@ -562,7 +429,7 @@ const validateInvitation = (
       JSON.stringify({ invitationId: invitation.id }),
       "Expired invitation encountered",
     );
-    void markInvitationExpired(invitation.id)
+    void markInvitationExpired(invitation.id, invitation.tokenHash)
       .then((res) => {
         if (res.count !== 1) {
           throw new TRPCError({
@@ -596,6 +463,12 @@ const validateInvitation = (
 
 const hashInvitationToken = (token: string): string => {
   return createHash("sha256").update(token).digest("hex");
+};
+
+const getInvitationUrl = (token: string) => {
+  const origin =
+    process.env.WEB_ORIGIN?.split(",")[0]?.trim() || "http://localhost:5173";
+  return new URL("/invitation/" + token, origin).href;
 };
 
 const generateInvitationToken = () => {
@@ -652,4 +525,117 @@ export const getOrganizationGroups = async (
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
+};
+
+export const listOrganizationInvitations = (
+  organizationId: string,
+  role: OrganizationRole,
+) => {
+  if (!can(role, PERMISSIONS.MEMBER_INVITATION_VIEW)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You cannot view workspace invitations",
+    });
+  }
+  return prisma.organizationInvitation.findMany({
+    where: { organizationId, status: "PENDING" },
+    select: { id: true, email: true, role: true, expiresAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+export const manageOrganizationInvitation = async (
+  input: { invitationId: string; action: "revoke" | "resend" },
+  organizationId: string,
+  userId: string,
+) => {
+  const { invitationId, action } = input;
+  const permission =
+    action === "revoke"
+      ? PERMISSIONS.MEMBER_INVITATION_REVOKE
+      : PERMISSIONS.MEMBER_INVITATION_RESEND;
+  const { token, tokenHash } = generateInvitationToken();
+  const previous = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Organization" WHERE id = ${organizationId} FOR UPDATE`;
+    const actor = await findOrganizationMember({ organizationId, userId }, tx);
+    if (actor?.status !== "ACTIVE" || !can(actor.role, permission)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You cannot manage workspace invitations",
+      });
+    }
+
+    const invitation = await tx.organizationInvitation.findFirst({
+      where: { id: invitationId, organizationId, status: "PENDING" },
+      select: {
+        tokenHash: true,
+        expiresAt: true,
+        group: { select: { organizationId: true } },
+      },
+    });
+    if (!invitation) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Pending invitation not found",
+      });
+    }
+    if (
+      action === "resend" &&
+      invitation.group?.organizationId !== organizationId
+    ) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "The invitation group is unavailable",
+      });
+    }
+
+    const { count } = await tx.organizationInvitation.updateMany({
+      where: {
+        id: invitationId,
+        organizationId,
+        status: "PENDING",
+        tokenHash: invitation.tokenHash,
+      },
+      data:
+        action === "revoke"
+          ? { status: "REVOKED", respondedAt: new Date() }
+          : {
+              tokenHash,
+              expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+            },
+    });
+    if (!count) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "This invitation has already changed",
+      });
+    }
+    return invitation;
+  });
+
+  if (action === "resend") {
+    try {
+      await emailQueue.add(
+        "organization-invitation",
+        { invitationId, invitationUrl: getInvitationUrl(token) },
+        { jobId: `${invitationId}-${tokenHash}` },
+      );
+    } catch (cause) {
+      await prisma.organizationInvitation.updateMany({
+        where: {
+          id: invitationId,
+          organizationId,
+          status: "PENDING",
+          tokenHash,
+        },
+        data: { tokenHash: previous.tokenHash, expiresAt: previous.expiresAt },
+      });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Could not queue the invitation email. Please try again.",
+        cause,
+      });
+    }
+  }
+  return { id: invitationId };
 };

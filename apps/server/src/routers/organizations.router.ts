@@ -1,3 +1,4 @@
+import { updateOrganizationMember } from "../services/update-organization-member.service.js";
 import {
   protectedProcedure,
   publicProcedure,
@@ -8,6 +9,7 @@ import {
   changeOrganizationSchema,
   createOrganizationGroupSchema,
   inviteMemberSchema,
+  manageOrganizationInvitationSchema,
   respondToInviteSchema,
   selectOrganizationSchema,
   updateOrganizationMemberSchema,
@@ -21,8 +23,9 @@ import {
   getOrganizationGroups,
   getOrganizationMembers,
   inviteOrganizationMember,
+  listOrganizationInvitations,
+  manageOrganizationInvitation,
   respondToInvitation,
-  updateOrganizationMember,
 } from "../services/organization-membership.service.js";
 
 import { createOrganizationGroup } from "../services/organization-group.service.js";
@@ -94,14 +97,19 @@ export const organizationRouter = router({
       return result;
     }),
 
+  getInvitations: tenantProcedure.query(({ ctx }) =>
+    listOrganizationInvitations(ctx.organizationId, ctx.role),
+  ),
+
+  manageInvitation: tenantProcedure
+    .input(manageOrganizationInvitationSchema)
+    .mutation(({ ctx, input }) =>
+      manageOrganizationInvitation(input, ctx.organizationId, ctx.user.id),
+    ),
+
   updateMember: tenantProcedure
     .input(updateOrganizationMemberSchema)
     .mutation(({ ctx, input }) =>
-      updateOrganizationMember(
-        input,
-        ctx.user.id,
-        ctx.organizationId,
-        ctx.role,
-      ),
+      updateOrganizationMember(input, ctx.user.id, ctx.organizationId),
     ),
 });

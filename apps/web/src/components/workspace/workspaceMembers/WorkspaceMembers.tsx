@@ -16,7 +16,7 @@ type Member = {
   organizationId: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
   userId: string;
-  groupId: string;
+  groupId: string | null;
   user: {
     name: string;
     email: string;
@@ -63,6 +63,11 @@ function WorkspaceMembers({
   const signedInMember = members.find(
     (member) => member.userId === auth?.user?.id,
   );
+  const isOwner = signedInMember?.role === "OWNER";
+  const isAdmin = signedInMember?.role === "ADMIN";
+  const activeOwners = members.filter(
+    ({ role, status }) => role === "OWNER" && status === "ACTIVE",
+  ).length;
   const canInvite =
     !!signedInMember && can(signedInMember.role, PERMISSIONS.MEMBER_INVITE);
   const canUpdate =
@@ -99,6 +104,12 @@ function WorkspaceMembers({
       {editMember ? (
         <EditMemberModal
           member={editMember}
+          canAssignOwner={isOwner}
+          isLastActiveOwner={
+            editMember.role === "OWNER" &&
+            editMember.status === "ACTIVE" &&
+            activeOwners === 1
+          }
           onClose={() => setEditMember(null)}
         />
       ) : null}
@@ -150,6 +161,12 @@ function WorkspaceMembers({
           </thead>
           <tbody className="divide-y divide-gray-100 dark:bg-slate-900 dark:divide-slate-700">
             {members.map((member) => {
+              const canManageStatus =
+                isOwner || (isAdmin && member.role === "MEMBER");
+              const isLastActiveOwner =
+                member.role === "OWNER" &&
+                member.status === "ACTIVE" &&
+                activeOwners === 1;
               const joinedAt = new Date(member.joinedAt);
               return (
                 <tr
@@ -205,7 +222,9 @@ function WorkspaceMembers({
                         disabled={
                           !canUpdate ||
                           member.status === "REMOVED" ||
-                          member.role === "OWNER"
+                          (!isOwner &&
+                            (member.role === "OWNER" ||
+                              member.userId === signedInMember?.userId))
                         }
                         aria-label={`Edit ${member.user.name}`}
                         className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-indigo-200"
@@ -213,36 +232,37 @@ function WorkspaceMembers({
                         <FontAwesomeIcon icon={faPen} className="mr-2" />
                         Edit
                       </button>
-                      {member.userId !== auth?.user?.id &&
-                        (member.status === "SUSPENDED" ? (
-                          <button
-                            type="button"
-                            onClick={() => onActivate?.(member)}
-                            disabled={!canActivate}
-                            aria-label={`Activate access for ${member.user.name}`}
-                            className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-green-200"
-                          >
-                            <FontAwesomeIcon
-                              icon={faUserCheck}
-                              className="mr-2"
-                            />
-                            Activate
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onManageAccess?.(member)}
-                            disabled={
-                              (!canSuspend && !canRemove) ||
-                              member.status === "REMOVED"
-                            }
-                            aria-label={`Manage access for ${member.user.name}`}
-                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-red-200"
-                          >
-                            <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                            Manage Access
-                          </button>
-                        ))}
+                      {canManageStatus && member.status === "SUSPENDED" && (
+                        <button
+                          type="button"
+                          onClick={() => onActivate?.(member)}
+                          disabled={!canActivate}
+                          aria-label={`Activate access for ${member.user.name}`}
+                          className="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-green-200"
+                        >
+                          <FontAwesomeIcon
+                            icon={faUserCheck}
+                            className="mr-2"
+                          />
+                          Activate
+                        </button>
+                      )}
+                      {canManageStatus && (
+                        <button
+                          type="button"
+                          onClick={() => onManageAccess?.(member)}
+                          disabled={
+                            (!canSuspend && !canRemove) ||
+                            isLastActiveOwner ||
+                            member.status === "REMOVED"
+                          }
+                          aria-label={`Manage access for ${member.user.name}`}
+                          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-red-200"
+                        >
+                          <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                          Manage Access
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

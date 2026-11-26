@@ -19,6 +19,7 @@ function WorkspacePage() {
   const [accessMember, setAccessMember] = useState<{
     id: string;
     name: string;
+    status: string;
   } | null>(null);
   const queryClient = useQueryClient();
   const auth = useContext(AuthContext);
@@ -89,9 +90,10 @@ function WorkspacePage() {
     trpc.organization.updateMember.mutationOptions({
       onSuccess: () => {
         setAccessMember(null);
-        return queryClient.invalidateQueries({
-          queryKey: membersQueryKey,
-        });
+        return Promise.all([
+          queryClient.invalidateQueries({ queryKey: membersQueryKey }),
+          queryClient.invalidateQueries({ queryKey: trpc.organization.getGroups.queryKey() }),
+        ]);
       },
     }),
   );
@@ -119,7 +121,7 @@ function WorkspacePage() {
       {accessMember && (
         <MemberAccessModal
           memberName={accessMember.name}
-          canSuspend={canSuspend}
+          canSuspend={canSuspend && accessMember.status !== "SUSPENDED"}
           canRemove={canRemove}
           isPending={updateMember.isPending}
           error={updateMember.error?.message}
@@ -179,6 +181,7 @@ function WorkspacePage() {
                         setAccessMember({
                           id: member.id,
                           name: member.user.name,
+                          status: member.status,
                         });
                       }}
                     />

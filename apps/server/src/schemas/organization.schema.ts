@@ -31,8 +31,8 @@ export const respondToInviteSchema = z.discriminatedUnion("action", [
 export const updateOrganizationMemberSchema = z
   .object({
     memberId: z.string().trim().uuid(),
-    role: z.enum(["ADMIN", "MEMBER"]).optional(),
-    groupId: z.string().trim().uuid().optional(),
+    role: z.enum(["OWNER", "ADMIN", "MEMBER"]).optional(),
+    groupId: z.string().trim().uuid().nullable().optional(),
     membershipStatus: z.enum(["ACTIVE", "SUSPENDED", "REMOVED"]).optional(),
   })
   .refine(
@@ -45,4 +45,9 @@ export const updateOrganizationMemberSchema = z
 
 export const createOrganizationGroupSchema = z.object({
   name: z.string().trim().min(1, "Enter a group name").max(100),
+});
+
+export const manageOrganizationInvitationSchema = z.object({
+  invitationId: z.string().uuid(),
+  action: z.enum(["revoke", "resend"]),
 });

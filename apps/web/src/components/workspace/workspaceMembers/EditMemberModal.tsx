@@ -15,18 +15,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 type EditMemberProps = {
   member: WorkspaceMembersPropType["members"][number];
   onClose: () => void;
+  canAssignOwner: boolean;
+  isLastActiveOwner: boolean;
 };
 
-function EditMemberModal({ member, onClose }: EditMemberProps) {
+function EditMemberModal({
+  member,
+  onClose,
+  canAssignOwner,
+  isLastActiveOwner,
+}: EditMemberProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const id = useId();
   const auth = useContext(AuthContext);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [groupId, setGroupId] = useState(member.groupId);
-  const [role, setRole] = useState<"ADMIN" | "MEMBER">(
-    member.role === "ADMIN" ? "ADMIN" : "MEMBER",
-  );
+  const [role, setRole] = useState(member.role);
 
   const groups = useQuery({
     ...trpc.organization.getGroups.queryOptions(),
@@ -64,7 +69,10 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
     return () => dialog?.close();
   }, []);
 
-  const validGroup = groups.data?.some((group) => group.id === groupId);
+  const validGroup =
+    groupId === member.groupId ||
+    groupId === null ||
+    groups.data?.some((group) => group.id === groupId);
   const changed = groupId !== member.groupId || role !== member.role;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -72,8 +80,8 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
     if (updateMember.isPending || !validGroup || !changed) return;
     updateMember.mutate({
       memberId: member.id,
-      groupId,
-      role,
+      groupId: groupId === member.groupId ? undefined : groupId,
+      role: role === member.role ? undefined : role,
     });
   }
 
@@ -97,7 +105,7 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
         Edit member
       </h2>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Update {member.user.name}'s group, and role.
+        Update {member.user.name}'s group and role.
       </p>
 
       <form onSubmit={submit} className="mt-6 space-y-5">
@@ -111,15 +119,18 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
           <select
             id={id + "-group"}
             name="groupId"
-            required
-            value={validGroup ? groupId : ""}
-            onChange={(e) => setGroupId(e.target.value)}
+            value={groupId ?? ""}
+            onChange={(e) => setGroupId(e.target.value || null)}
             disabled={updateMember.isPending || !groups.isSuccess}
             className={fieldClass}
           >
-            <option value="" disabled>
-              {groups.isPending ? "Loading groups..." : "Select a group"}
-            </option>
+            <option value="">No group</option>
+            {member.groupId &&
+              !groups.data?.some((group) => group.id === member.groupId) && (
+                <option value={member.groupId}>
+                  {member.group?.name ?? "Current group"}
+                </option>
+              )}
             {groups.data?.map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name}
@@ -138,11 +149,6 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
               </button>
             </p>
           )}
-          {groups.isSuccess && !groups.data.length && (
-            <p role="status" className="mt-2 text-sm">
-              Create a workspace group before updating this member.
-            </p>
-          )}
         </div>
 
         <div>
@@ -156,13 +162,19 @@ function EditMemberModal({ member, onClose }: EditMemberProps) {
             id={id + "-role"}
             name="role"
             value={role}
-            onChange={(e) => setRole(e.target.value as "ADMIN" | "MEMBER")}
-            disabled={updateMember.isPending}
+            onChange={(e) => setRole(e.target.value as typeof role)}
+            disabled={updateMember.isPending || isLastActiveOwner}
             className={fieldClass}
           >
             <option value="MEMBER">Member</option>
             <option value="ADMIN">Admin</option>
+            {canAssignOwner && <option value="OWNER">Owner</option>}
           </select>
+          {isLastActiveOwner && (
+            <p className="mt-2 text-sm">
+              Assign another active owner before changing this role.
+            </p>
+          )}
         </div>
         {updateMember.isError && (
           <p
