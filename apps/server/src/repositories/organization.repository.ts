@@ -95,6 +95,7 @@ export const findPendingOrganizationInvitation = (
 export const claimOrganizationInvitation = (
   input: {
     id: string;
+    tokenHash: string;
     status: "ACCEPTED" | "REJECTED";
     respondedAt: Date;
   },
@@ -103,6 +104,7 @@ export const claimOrganizationInvitation = (
   return db.organizationInvitation.updateMany({
     where: {
       id: input.id,
+      tokenHash: input.tokenHash,
       status: "PENDING",
       expiresAt: {
         gt: input.respondedAt,
@@ -134,10 +136,14 @@ export const setInvitationAcceptedByUser = (
   });
 };
 
-export const markInvitationExpired = async (invitationId: string) => {
+export const markInvitationExpired = async (
+  invitationId: string,
+  tokenHash: string,
+) => {
   return prisma.organizationInvitation.updateMany({
     where: {
       id: invitationId,
+      tokenHash,
       status: "PENDING",
     },
     data: {

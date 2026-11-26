@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import nodemailer, { type SMTPTransportOptions } from "nodemailer";
 import Handlebars from "handlebars";
 import { readFileSync } from "node:fs";
@@ -114,6 +115,8 @@ export const processEmailJob = async (
 ) => {
   if (job.name === "organization-invitation") {
     const { invitationId, invitationUrl } = job.data;
+    const token = new URL(invitationUrl).pathname.split("/").pop() ?? "";
+    const tokenHash = createHash("sha256").update(token).digest("hex");
 
     const invitation = await prisma.organizationInvitation.findUnique({
       where: { id: invitationId },
@@ -122,6 +125,7 @@ export const processEmailJob = async (
     if (
       !invitation ||
       invitation.status !== "PENDING" ||
+      invitation.tokenHash !== tokenHash ||
       invitation.expiresAt <= new Date() ||
       invitation.organization.status !== "ACTIVE" ||
       !invitation.group ||
@@ -142,7 +146,7 @@ export const processEmailJob = async (
       });
     } catch (error) {
       await prisma.organizationInvitation.updateMany({
-        where: { id: invitationId, status: "PENDING" },
+        where: { id: invitationId, status: "PENDING", tokenHash },
         data: { status: "REVOKED" },
       });
       throw error;

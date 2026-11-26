@@ -131,7 +131,7 @@ model OrganizationMember {
   id             String           @id @default(uuid())
   organizationId String
   userId         String
-  groupId        String
+  groupId        String?
   role           OrganizationRole @default(MEMBER)
   status         MembershipStatus @default(ACTIVE)
   joinedAt       DateTime         @default(now())

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc.ts";
 
 type AddMemberModalProps = {
@@ -21,8 +21,11 @@ function AddMemberModal({ organizationName, onClose }: AddMemberModalProps) {
   const trpc = useTRPC();
   const groups = useQuery(trpc.organization.getGroups.queryOptions());
   const selectedGroupId = groups.data?.some((group) => group.id === groupId) ? groupId : "";
+  const queryClient = useQueryClient();
   const invitation = useMutation(
-    trpc.organization.inviteMember.mutationOptions(),
+    trpc.organization.inviteMember.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.organization.getInvitations.queryKey() }),
+    }),
   );
 
   useEffect(() => {
