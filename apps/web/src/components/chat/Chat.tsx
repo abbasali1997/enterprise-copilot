@@ -33,6 +33,7 @@ const ConversationChat = ({
   const conversationIdRef = useRef<string | undefined>(conversationId);
   // to ensure another message can not be sent while one's response is being generated
   const sendingRef = useRef(false);
+  const nextPendingMessageId = useRef(0);
 
   const { data: models = [] } = useQuery({
     queryKey: ["conversation", "models"],
@@ -76,7 +77,7 @@ const ConversationChat = ({
         ...input,
       }),
     onMutate: (input) => {
-      const temporaryId = crypto.randomUUID();
+      const temporaryId = `pending-${nextPendingMessageId.current++}`;
       setMessages((current) => [
         ...(current ?? messages),
         {
