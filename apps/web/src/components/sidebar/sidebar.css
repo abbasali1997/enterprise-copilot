@@ -8,9 +8,9 @@ html[data-theme="dark"] #side-bar {
 
 html[data-theme="dark"] #side-bar .rainbow-btn {
   background: linear-gradient(110deg, #6d28d9, #4338ca 55%, #0e7490);
-  box-shadow: 0 4px 20px rgb(67 56 202 / 25%);
+  box-shadow: 0 0.25rem 1.25rem rgb(67 56 202 / 25%);
 }
 
 html[data-theme="dark"] #side-bar .rainbow-btn:hover {
-  box-shadow: 0 6px 24px rgb(67 56 202 / 40%);
+  box-shadow: 0 0.375rem 1.5rem rgb(67 56 202 / 40%);
 }

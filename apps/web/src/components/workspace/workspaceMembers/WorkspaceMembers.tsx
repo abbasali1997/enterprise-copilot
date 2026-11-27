@@ -134,7 +134,7 @@ function WorkspaceMembers({
       </div>
 
       <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[1100px] table-auto text-left text-sm shadow-lg rounded-lg">
+        <table className="w-full min-w-[68.75rem] table-auto text-left text-sm shadow-lg rounded-lg">
           <caption className="sr-only">
             Workspace members and their groups, roles, status, and join dates
           </caption>
@@ -175,7 +175,7 @@ function WorkspaceMembers({
                 >
                   <th
                     scope="row"
-                    className="min-w-[180px] px-5 py-4 font-medium text-gray-900 dark:text-slate-100"
+                    className="min-w-[11.25rem] px-5 py-4 font-medium text-gray-900 dark:text-slate-100"
                   >
                     {member.user.name}{" "}
                     {member.role === "OWNER" ? (
@@ -185,27 +185,27 @@ function WorkspaceMembers({
                       />
                     ) : null}
                   </th>
-                  <td className="min-w-[260px] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
+                  <td className="min-w-[16.25rem] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
                     {member.user.email}
                   </td>
-                  <td className="min-w-[160px] px-5 py-4 text-gray-600 dark:text-slate-100">
+                  <td className="min-w-[10rem] px-5 py-4 text-gray-600 dark:text-slate-100">
                     {member.group?.name ?? "No group"}
                   </td>
-                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
+                  <td className="min-w-[8.125rem] whitespace-nowrap px-5 py-4">
                     <span
                       className={`rounded-4xl px-2.5 py-1 text-xs font-medium capitalize ${rolesStyles[member.role]}`}
                     >
                       {member.role.toUpperCase()}
                     </span>
                   </td>
-                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
+                  <td className="min-w-[8.125rem] whitespace-nowrap px-5 py-4">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusStyles[member.status]}`}
                     >
                       {member.status.toLowerCase()}
                     </span>
                   </td>
-                  <td className="min-w-[160px] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
+                  <td className="min-w-[10rem] whitespace-nowrap px-5 py-4 text-gray-600 dark:text-slate-100">
                     {Number.isNaN(joinedAt.getTime()) ? (
                       "—"
                     ) : (
@@ -214,8 +214,8 @@ function WorkspaceMembers({
                       </time>
                     )}
                   </td>
-                  <td className="min-w-[130px] whitespace-nowrap px-5 py-4">
-                    <div className="flex min-w-[240px] flex-nowrap gap-2 [&>button]:shrink-0 [&>button]:whitespace-nowrap">
+                  <td className="min-w-[8.125rem] whitespace-nowrap px-5 py-4">
+                    <div className="flex min-w-[15rem] flex-nowrap gap-2 [&>button]:shrink-0 [&>button]:whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => setEditMember(member)}
