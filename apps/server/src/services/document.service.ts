@@ -68,6 +68,18 @@ export const createUpload = async (
         signableHeaders: new Set(["content-type", "content-length"]),
       });
 
+      logger.info(
+        JSON.stringify({
+          operation: "document.createUpload",
+          event: "urlSigned",
+          userId,
+          organizationId,
+          storageOrigin: new URL(url).origin,
+          expiresInSeconds: PRESIGNED_URL_EXPIRY_SECONDS,
+        }),
+        "Document upload URL signed",
+      );
+
       return {
         url,
         method: "PUT" as const,
@@ -105,21 +117,35 @@ export const finalizeUpload = async (
         });
       }
 
-      const object = await s3Client
-        .send(new HeadObjectCommand({ Bucket: BUCKET, Key: input.key }))
-        .catch((error: unknown) => {
-          if (
-            error instanceof S3ServiceException &&
-            error.$metadata.httpStatusCode === 404
-          ) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Uploaded document was not found",
-              cause: error,
-            });
-          }
-          throw error;
-        });
+      const object = await logOperation(
+        "document.finalizeUpload.headObject",
+        { userId, organizationId },
+        () => s3Client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: input.key })),
+      ).catch((error: unknown) => {
+        if (error instanceof S3ServiceException) {
+          logger.warn(
+            JSON.stringify({
+              operation: "document.finalizeUpload.headObject",
+              userId,
+              organizationId,
+              s3Status: error.$metadata.httpStatusCode,
+              s3RequestId: error.$metadata.requestId,
+            }),
+            "Storage rejected document lookup",
+          );
+        }
+        if (
+          error instanceof S3ServiceException &&
+          error.$metadata.httpStatusCode === 404
+        ) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Uploaded document was not found",
+            cause: error,
+          });
+        }
+        throw error;
+      });
 
       const size = object.ContentLength;
       if (
@@ -166,10 +192,15 @@ export const finalizeUpload = async (
       }
 
       try {
-        await documentQueue.add(
-          "finalize-upload",
+        await logOperation(
+          "document.finalizeUpload.enqueue",
           { documentId: attachment.id, userId, organizationId },
-          { jobId: attachment.id },
+          () =>
+            documentQueue.add(
+              "finalize-upload",
+              { documentId: attachment.id, userId, organizationId },
+              { jobId: attachment.id },
+            ),
         );
       } catch (error) {
         // Retain the upload: enqueue may have succeeded before a connection error.

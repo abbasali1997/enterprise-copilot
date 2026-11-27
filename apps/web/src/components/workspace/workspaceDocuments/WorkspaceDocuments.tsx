@@ -101,18 +101,39 @@ function WorkspaceDocuments({
         mimeType: "application/pdf",
       });
 
+      const storageOrigin = new URL(data.url).origin;
+      console.info("[document upload] Sending file to storage", {
+        storageOrigin,
+        fileSize: file.size,
+      });
+
       // The browser sets Content-Length from the File body; scripts cannot set it.
       const response = await fetch(data.url, {
         method: data.method,
         headers: { "Content-Type": data.headers["Content-Type"] },
         body: file,
+      }).catch((error: unknown) => {
+        console.warn("[document upload] Storage request failed before a response was available", {
+          storageOrigin,
+          errorType: error instanceof Error ? error.name : "UnknownError",
+        });
+        throw error;
       });
 
       if (!response.ok) {
+        console.warn("[document upload] Storage returned an error", {
+          storageOrigin,
+          status: response.status,
+        });
         throw new Error(
           "Document upload failed (" + response.status + "). Please try again.",
         );
       }
+
+      console.info("[document upload] Storage accepted the file", {
+        storageOrigin,
+        status: response.status,
+      });
 
       return finalizeUpload.mutateAsync({
         name: file.name,
